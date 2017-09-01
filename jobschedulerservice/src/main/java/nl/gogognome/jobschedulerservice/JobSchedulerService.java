@@ -68,15 +68,18 @@ public class JobSchedulerService {
         if (!started.compareAndSet(true, false)) {
             throw new IllegalStateException("Processing jobs has not been started before. First start processing before stopping processing.");
         }
-        jobScheduler.releaseAllThreadsWaitingForRunnableJob();
-        jobIngesterRunner.stop();
-        executorService.shutdown();
+
+        jobScheduler.unblockThreadsWithingOnNextRunnableJobImmediately(true);
         try {
+            jobIngesterRunner.stop();
+            executorService.shutdown();
             if (!executorService.awaitTermination(1, MINUTES)) {
                 LOGGER.warn("Not all threads handling jobs have terminated!");
             }
         } catch (InterruptedException e) {
             LOGGER.warn("Ignored interrupted exception: " + e.getMessage(), e);
+        } finally {
+            jobScheduler.unblockThreadsWithingOnNextRunnableJobImmediately(false);
         }
         LOGGER.trace("Stopped processing jobs");
     }

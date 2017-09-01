@@ -19,6 +19,8 @@ public class JobSchedulerServiceTest {
 
     private JobSchedulerService jobSchedulerService;
 
+    private static volatile int nrExecutions;
+
     @Before
     public void initDataSource() {
         JobIngesterProperties jobIngesterProperties = new JobIngesterProperties();
@@ -30,6 +32,8 @@ public class JobSchedulerServiceTest {
         jobSchedulerService = new JobSchedulerService(new FifoRunnableJobFinder(), jobIngesterProperties, databaseJobPersisterProperties, 4);
 
         initDatabase(jobIngesterProperties);
+
+        nrExecutions = 0;
     }
 
     private void initDatabase(JobIngesterProperties jobIngesterProperties) {
@@ -66,21 +70,34 @@ public class JobSchedulerServiceTest {
         SuccessfulJobRunner successfulJobRunner = new SuccessfulJobRunner();
         jobSchedulerService.startProcessingJobs();
         jobSchedulerService.schedule(successfulJobRunner);
-        waitFor(() -> successfulJobRunner.getNrExecutions() > 0);
+        waitFor(() -> successfulJobRunner.getNrExecutions() >= 1);
         jobSchedulerService.stopProcessingJobs();
 
         assertEquals(1, successfulJobRunner.getNrExecutions());
     }
 
+    @Test
+    public void start_runTenJobs_stop_succeeds() throws Exception {
+        int nrJobs = 10;
+        SuccessfulJobRunner successfulJobRunner = new SuccessfulJobRunner();
+        jobSchedulerService.startProcessingJobs();
+        for (int i=0; i<10; i++) {
+            jobSchedulerService.schedule(successfulJobRunner);
+        }
+        waitFor(() -> successfulJobRunner.getNrExecutions() >= nrJobs);
+        jobSchedulerService.stopProcessingJobs();
+
+        assertEquals(nrJobs, successfulJobRunner.getNrExecutions());
+    }
+
     private void waitFor(Supplier<Boolean> condition) throws InterruptedException {
-        while (!condition.get()) {
+        long endTime = System.currentTimeMillis() + 30_000;
+        while (!condition.get() && System.currentTimeMillis() < endTime) {
             Thread.sleep(10);
         }
     }
 
     private static class SuccessfulJobRunner implements Runnable {
-
-        private static transient volatile int nrExecutions;
 
         @Override
         public void run() {

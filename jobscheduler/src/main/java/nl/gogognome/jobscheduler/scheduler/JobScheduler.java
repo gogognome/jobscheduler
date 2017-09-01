@@ -1,5 +1,9 @@
 package nl.gogognome.jobscheduler.scheduler;
 
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import static nl.gogognome.jobscheduler.scheduler.JobState.ERROR;
 import static nl.gogognome.jobscheduler.scheduler.JobState.IDLE;
 import static nl.gogognome.jobscheduler.scheduler.JobState.RUNNING;
@@ -10,6 +14,8 @@ public class JobScheduler {
     private final JobPersister jobPersister;
 
     private final Object lock = new Object();
+    private final Semaphore startNextRunnableJobSemaphore = new Semaphore(1);
+    private final AtomicBoolean unblockThreadsWithingOnNextRunnableJobImmediately = new AtomicBoolean(false);
 
     public JobScheduler(RunnableJobFinder runnableJobFinder, JobPersister jobPersister) {
         this.runnableJobFinder = runnableJobFinder;
@@ -137,21 +143,37 @@ public class JobScheduler {
         }
 
         long endTime = System.currentTimeMillis() + timeoutMilliseconds;
-        long delay = 10;
-        synchronized (lock) {
-            while (true) {
-                Job job = tryStartNextRunnableJobUnsynchronized(jobRequesterId);
-                if (job != null || System.currentTimeMillis() >= endTime) {
-                    return job;
-                }
-                try {
-                    lock.wait(delay);
-                } catch (InterruptedException e) {
-                    return null;
-                }
-                delay = Math.min(2*delay, 1000);
+        // The semaphore is used to ensure only one thread at a time tries to start a job. If no job is runnable now,
+        // then busy waiting is with exponential backoff is applied, and that is something that should be done by
+        // at most one thread.
+        try {
+            boolean acquiredPermit = startNextRunnableJobSemaphore.tryAcquire(timeoutMilliseconds, TimeUnit.MILLISECONDS);
+            if (!acquiredPermit) {
+                return null;
             }
+        } catch (InterruptedException e) {
+            return null;
         }
+        try {
+            long delay = 10;
+            synchronized (lock) {
+                while (!unblockThreadsWithingOnNextRunnableJobImmediately.get()) {
+                    Job job = tryStartNextRunnableJobUnsynchronized(jobRequesterId);
+                    if (job != null || System.currentTimeMillis() >= endTime) {
+                        return job;
+                    }
+                    try {
+                        lock.wait(delay);
+                    } catch (InterruptedException e) {
+                        return null;
+                    }
+                    delay = Math.min(2 * delay, 1000);
+                }
+            }
+        } finally {
+            startNextRunnableJobSemaphore.release();
+        }
+        return null;
     }
 
     private Job tryStartNextRunnableJobUnsynchronized(String jobRequesterId) {
@@ -180,8 +202,9 @@ public class JobScheduler {
         }
     }
 
-    public void releaseAllThreadsWaitingForRunnableJob() {
+    public void unblockThreadsWithingOnNextRunnableJobImmediately(boolean unlockThreadsImmediately) {
         synchronized (lock) {
+            unblockThreadsWithingOnNextRunnableJobImmediately.set(unlockThreadsImmediately);
             lock.notifyAll();
         }
     }
