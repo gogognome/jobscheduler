@@ -4,12 +4,10 @@ import nl.gogognome.dataaccess.dao.AbstractDomainClassDAO;
 import nl.gogognome.dataaccess.dao.NameValuePairs;
 import nl.gogognome.dataaccess.dao.ResultSetWrapper;
 import nl.gogognome.jobscheduler.scheduler.Job;
-import org.springframework.stereotype.Component;
 
 import java.sql.SQLException;
 import java.util.List;
 
-@Component
 public class JobCommandDAO extends AbstractDomainClassDAO<JobCommand>{
 
     private final JobIngesterProperties properties;

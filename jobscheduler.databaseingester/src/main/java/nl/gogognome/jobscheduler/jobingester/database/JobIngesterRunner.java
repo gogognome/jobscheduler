@@ -1,8 +1,5 @@
 package nl.gogognome.jobscheduler.jobingester.database;
 
-import org.springframework.stereotype.Component;
-
-@Component
 public class JobIngesterRunner {
 
     private final JobIngesterProperties properties;

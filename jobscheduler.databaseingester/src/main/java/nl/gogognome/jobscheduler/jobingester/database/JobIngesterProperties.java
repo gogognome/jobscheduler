@@ -1,10 +1,5 @@
 package nl.gogognome.jobscheduler.jobingester.database;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
-
-@Component
-@ConfigurationProperties("jobingesterdatabase")
 public class JobIngesterProperties {
 
     private String connectionName = "nl.gogognome.jobscheduler.jobingester";

@@ -2,11 +2,9 @@ package nl.gogognome.jobscheduler.jobingester.database;
 
 import nl.gogognome.dataaccess.transaction.NewTransaction;
 import nl.gogognome.jobscheduler.scheduler.JobScheduler;
-import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-@Component
 public class JobIngester {
 
     private final JobScheduler jobScheduler;
