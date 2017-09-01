@@ -72,6 +72,25 @@ public class JobScheduler {
     }
 
     /**
+     * Removes a job. This method ignores the state of the job. Use this method for example to:
+     * <ul>
+     *     <li>remove a job when its state is running and its requester is not running anymore.</li>
+     *     <li>remove a failed job that cannot be rescheduled (retried) anymore.</li>
+     *     <li>remove a job that has been scheduled in the future but is no longer needed.</li>
+     * </ul>
+     * @param jobId
+     */
+    public void remove(String jobId) {
+        ensureIsNotNull(jobId, "jobId");
+        synchronized (lock) {
+            getScheduledJob(jobId); // ensure the job exists
+            runnableJobFinder.removeJob(jobId);
+            jobPersister.remove(jobId);
+            lock.notify();
+        }
+    }
+
+    /**
      * Notify the job scheduler about a job that finished with a failure.Only allowed if job has state running.
      * Will change the state of the job to error.
      * @param jobId the id of the job
