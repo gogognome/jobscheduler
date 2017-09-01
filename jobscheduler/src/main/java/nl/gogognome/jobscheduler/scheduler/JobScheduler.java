@@ -180,6 +180,12 @@ public class JobScheduler {
         }
     }
 
+    public void releaseAllThreadsWaitingForRunnableJob() {
+        synchronized (lock) {
+            lock.notifyAll();
+        }
+    }
+
     private void ensureIsNotNull(Object object, String variableName) {
         if (object == null) {
             throw new NullPointerException(variableName);

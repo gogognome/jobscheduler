@@ -10,7 +10,7 @@ import java.sql.SQLException;
 import java.util.List;
 
 @Component
-class JobCommandDAO extends AbstractDomainClassDAO<JobCommand>{
+public class JobCommandDAO extends AbstractDomainClassDAO<JobCommand>{
 
     private final JobIngesterProperties properties;
 

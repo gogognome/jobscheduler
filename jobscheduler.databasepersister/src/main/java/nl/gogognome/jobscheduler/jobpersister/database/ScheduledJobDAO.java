@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 import java.sql.SQLException;
 
 @Component
-class ScheduledJobDAO extends AbstractDomainClassDAO<ScheduledJob>{
+public class ScheduledJobDAO extends AbstractDomainClassDAO<ScheduledJob>{
 
     private final DatabaseJobPersisterProperties properties;
 

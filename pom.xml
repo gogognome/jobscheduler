@@ -15,6 +15,7 @@
         <module>jobscheduler.databaseingester</module>
         <module>jobscheduler.databasepersister</module>
         <module>httpjobschedulerserver</module>
+        <module>jobschedulerservice</module>
     </modules>
 
     <properties>

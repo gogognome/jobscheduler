@@ -2,7 +2,7 @@ package nl.gogognome.jobscheduler.jobingester.database;
 
 import nl.gogognome.jobscheduler.scheduler.Job;
 
-class JobCommand {
+public class JobCommand {
 
     private final Command command;
     private final Job job;
