@@ -10,6 +10,7 @@ import nl.gogognome.jobscheduler.jobingester.database.JobIngesterProperties;
 import nl.gogognome.jobscheduler.jobingester.database.JobIngesterRunner;
 import nl.gogognome.jobscheduler.jobpersister.database.DatabaseJobPersister;
 import nl.gogognome.jobscheduler.jobpersister.database.DatabaseJobPersisterProperties;
+import nl.gogognome.jobscheduler.jobpersister.database.ScheduledJobDAO;
 import nl.gogognome.jobscheduler.runnablejobfinder.FifoRunnableJobFinder;
 import nl.gogognome.jobscheduler.scheduler.JobScheduler;
 import org.slf4j.Logger;
@@ -28,6 +29,23 @@ public class BeanConfiguration {
     @Bean
     public JobScheduler jobScheduler(DatabaseJobPersister databaseJobPersister) {
         return new JobScheduler(new FifoRunnableJobFinder(), databaseJobPersister);
+    }
+
+    @ConfigurationProperties("database")
+    @Bean
+    public DatabaseJobPersisterProperties databaseJobPersisterProperties() {
+        return new DatabaseJobPersisterProperties();
+    }
+
+    @Bean
+    public ScheduledJobDAO scheduledJobDAO(DatabaseJobPersisterProperties databaseJobPersisterProperties) {
+        return new ScheduledJobDAO(databaseJobPersisterProperties);
+    }
+
+    @Bean
+    public DatabaseJobPersister databaseJobPersister(DatabaseJobPersisterProperties databaseJobPersisterProperties,
+                                                     ScheduledJobDAO scheduledJobDAO) {
+        return new DatabaseJobPersister(databaseJobPersisterProperties, scheduledJobDAO);
     }
 
     @ConfigurationProperties("jobingesterdatabase")

@@ -1,10 +1,9 @@
 package nl.gogognome.jobscheduler.jobpersister.database;
 
-import org.springframework.stereotype.*;
-import nl.gogognome.dataaccess.transaction.*;
-import nl.gogognome.jobscheduler.scheduler.*;
+import nl.gogognome.dataaccess.transaction.RequireTransaction;
+import nl.gogognome.jobscheduler.scheduler.JobPersister;
+import nl.gogognome.jobscheduler.scheduler.ScheduledJob;
 
-@Component
 public class DatabaseJobPersister implements JobPersister {
 
     private final DatabaseJobPersisterProperties properties;

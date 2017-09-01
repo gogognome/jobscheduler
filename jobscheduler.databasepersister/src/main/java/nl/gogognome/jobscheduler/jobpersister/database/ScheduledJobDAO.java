@@ -6,11 +6,9 @@ import nl.gogognome.dataaccess.dao.ResultSetWrapper;
 import nl.gogognome.jobscheduler.scheduler.Job;
 import nl.gogognome.jobscheduler.scheduler.JobState;
 import nl.gogognome.jobscheduler.scheduler.ScheduledJob;
-import org.springframework.stereotype.Component;
 
 import java.sql.SQLException;
 
-@Component
 public class ScheduledJobDAO extends AbstractDomainClassDAO<ScheduledJob>{
 
     private final DatabaseJobPersisterProperties properties;
