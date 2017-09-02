@@ -4,6 +4,8 @@ import nl.gogognome.jobscheduler.scheduler.*;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class FifoRunnableJobFinder implements RunnableJobFinder {
 
@@ -61,6 +63,11 @@ public class FifoRunnableJobFinder implements RunnableJobFinder {
             }
         }
         return bestCandidate;
+    }
+
+    @Override
+    public List<ReadonlyScheduledJob> findAllJobs() {
+        return Collections.unmodifiableList(scheduledJobs);
     }
 
     @Override

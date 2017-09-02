@@ -4,5 +4,6 @@ public enum Command {
     SCHEDULE,
     RESCHEDULE,
     JOB_FINISHED,
-    JOB_FAILED
+    JOB_FAILED,
+    REMOVE
 }

@@ -38,6 +38,9 @@ public class JobIngester {
                             case JOB_FAILED:
                                 jobScheduler.jobFailed(j.getJob().getId());
                                 break;
+                            case REMOVE:
+                                jobScheduler.remove(j.getJob().getId());
+                                break;
                         }
                     });
                     jobCommandDAO.deleteJobCommands(jobCommands);

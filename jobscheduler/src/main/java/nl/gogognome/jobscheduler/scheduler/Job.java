@@ -5,7 +5,7 @@ import java.time.Instant;
 /**
  * A job to be scheduled.
  */
-public class Job {
+public class Job implements ReadonlyJob {
 
     private final String id;
     private String type;
@@ -16,10 +16,12 @@ public class Job {
         this.id = id;
     }
 
+    @Override
     public String getId() {
         return id;
     }
 
+    @Override
     public String getType() {
         return type;
     }
@@ -28,6 +30,7 @@ public class Job {
         this.type = type;
     }
 
+    @Override
     public byte[] getData() {
         return data != null ? data.clone() : null;
     }
@@ -36,6 +39,7 @@ public class Job {
         this.data = data != null ? data.clone() : null;
     }
 
+    @Override
     public Instant getScheduledAtInstant() {
         return scheduledAtInstant;
     }
