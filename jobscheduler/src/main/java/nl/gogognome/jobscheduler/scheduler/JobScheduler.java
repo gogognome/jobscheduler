@@ -1,5 +1,6 @@
 package nl.gogognome.jobscheduler.scheduler;
 
+import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -221,6 +222,16 @@ public class JobScheduler {
         }
     }
 
+    /**
+     * Gets a list of the jobs that have been scheduled, including jobs that are currently running or have failed.
+     * @return the jobs
+     */
+    public List<ReadonlyScheduledJob> findAllJobs() {
+        synchronized (lock) {
+            return runnableJobFinder.findAllJobs();
+        }
+    }
+
     public void unblockThreadsWithingOnNextRunnableJobImmediately(boolean unlockThreadsImmediately) {
         synchronized (lock) {
             unblockThreadsWithingOnNextRunnableJobImmediately.set(unlockThreadsImmediately);
@@ -233,5 +244,4 @@ public class JobScheduler {
             throw new NullPointerException(variableName);
         }
     }
-
 }

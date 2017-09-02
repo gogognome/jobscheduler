@@ -14,6 +14,7 @@ import java.util.function.Supplier;
 
 import static nl.gogognome.test.AssertExtensions.assertThrows;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class JobSchedulerServiceTest {
 
@@ -70,10 +71,10 @@ public class JobSchedulerServiceTest {
         SuccessfulJobRunner successfulJobRunner = new SuccessfulJobRunner();
         jobSchedulerService.startProcessingJobs();
         jobSchedulerService.schedule(successfulJobRunner);
-        waitFor(() -> successfulJobRunner.getNrExecutions() >= 1);
+        waitFor(() -> nrExecutions >= 1);
         jobSchedulerService.stopProcessingJobs();
 
-        assertEquals(1, successfulJobRunner.getNrExecutions());
+        assertEquals(1, nrExecutions);
     }
 
     @Test
@@ -84,10 +85,23 @@ public class JobSchedulerServiceTest {
         for (int i=0; i<10; i++) {
             jobSchedulerService.schedule(successfulJobRunner);
         }
-        waitFor(() -> successfulJobRunner.getNrExecutions() >= nrJobs);
+        waitFor(() -> nrExecutions >= nrJobs);
         jobSchedulerService.stopProcessingJobs();
 
-        assertEquals(nrJobs, successfulJobRunner.getNrExecutions());
+        assertEquals(nrJobs, nrExecutions);
+    }
+
+    @Test
+    public void start_scheduleJob_jobFails_removeJob_scheduleHasNoJobsAnymore_stop_succeeds() throws Exception {
+        jobSchedulerService.startProcessingJobs();
+
+        String jobId = jobSchedulerService.schedule(new FailingJobRunner());
+        waitFor(() -> nrExecutions >= 1);
+        assertEquals(1, nrExecutions);
+
+        jobSchedulerService.remove(jobId);
+        waitFor(() -> jobSchedulerService.findAllJobs().isEmpty());
+        assertTrue(jobSchedulerService.findAllJobs().isEmpty());
     }
 
     private void waitFor(Supplier<Boolean> condition) throws InterruptedException {
@@ -98,14 +112,17 @@ public class JobSchedulerServiceTest {
     }
 
     private static class SuccessfulJobRunner implements Runnable {
-
         @Override
         public void run() {
             nrExecutions++;
         }
+    }
 
-        public int getNrExecutions() {
-            return nrExecutions;
+    private static class FailingJobRunner implements Runnable {
+        @Override
+        public void run() {
+            nrExecutions++;
+            throw new RuntimeException("Something went wrong while running the job");
         }
     }
 }

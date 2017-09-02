@@ -1,5 +1,7 @@
 package nl.gogognome.jobscheduler.scheduler;
 
+import java.util.List;
+
 /**
  * A runnable job finder maintains a collection of jobs to be run. Modifications to this collection
  * are requested by the job scheduler. Finally, the runnable job finder will return the first job
@@ -47,8 +49,14 @@ public interface RunnableJobFinder {
     ScheduledJob findNextRunnableJob();
 
     /**
+     * Gets a collection of the jobs that have been scheduled, including jobs that are currently running or have failed.
+     * Ensure to return an unmodifiable collection of jobs
+     * @return the jobs
+     */
+    List<ReadonlyScheduledJob> findAllJobs();
+
+    /**
      * Removes all scheduled jobs.
      */
     void removeAllScheduledJobs();
-
 }

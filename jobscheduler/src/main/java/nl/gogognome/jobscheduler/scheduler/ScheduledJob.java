@@ -5,7 +5,7 @@ import java.time.Instant;
 /**
  * A ScheduledJob represents a Job that is managed by the scheduler.
  */
-public class ScheduledJob {
+public class ScheduledJob implements ReadonlyScheduledJob {
 
     private final Job job;
 
@@ -21,6 +21,12 @@ public class ScheduledJob {
         return job;
     }
 
+    @Override
+    public ReadonlyJob getReadonlyJob() {
+        return job;
+    }
+
+    @Override
     public JobState getState() {
         return state;
     }
@@ -29,6 +35,7 @@ public class ScheduledJob {
         this.state = state;
     }
 
+    @Override
     public String getRequesterId() {
         return requesterId;
     }
@@ -37,6 +44,7 @@ public class ScheduledJob {
         this.requesterId = requesterId;
     }
 
+    @Override
     public Instant getTimeoutAtInstant() {
         return timeoutAtInstant;
     }

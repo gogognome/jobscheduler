@@ -9,12 +9,14 @@ import nl.gogognome.jobscheduler.jobpersister.database.DatabaseJobPersisterPrope
 import nl.gogognome.jobscheduler.jobpersister.database.ScheduledJobDAO;
 import nl.gogognome.jobscheduler.scheduler.Job;
 import nl.gogognome.jobscheduler.scheduler.JobScheduler;
+import nl.gogognome.jobscheduler.scheduler.ReadonlyScheduledJob;
 import nl.gogognome.jobscheduler.scheduler.RunnableJobFinder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.Charset;
 import java.time.Instant;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -84,8 +86,13 @@ public class JobSchedulerService {
         LOGGER.trace("Stopped processing jobs");
     }
 
-    public void schedule(Runnable runnable) {
-        RequireTransaction.runs(() -> {
+    /**
+     * Schedules a job to execute the #Runnable as immediately.
+     * @param runnable the #Runnable to be executed
+     * @return the id of the job that has been scheduled
+     */
+    public String schedule(Runnable runnable) {
+        return RequireTransaction.returns(() -> {
             validateParameters(runnable);
 
             Job job = new Job(JOB_ID_PREFIX + nextId.getAndIncrement());
@@ -95,6 +102,19 @@ public class JobSchedulerService {
 
             jobCommandDAO.create(new JobCommand(SCHEDULE, job));
             LOGGER.trace("Scheduled job with type " + job.getType() + " and id " + job.getId());
+
+            return job.getId();
+        });
+    }
+
+    /**
+     * Removes the job with the specified id.
+     * @param jobId id of the job
+     */
+    public void remove(String jobId) {
+        RequireTransaction.runs(() -> {
+            jobCommandDAO.create(new JobCommand(REMOVE, new Job(jobId)));
+            LOGGER.trace("Removed job with id " + jobId);
         });
     }
 
@@ -139,4 +159,7 @@ public class JobSchedulerService {
         }
     }
 
+    public List<ReadonlyScheduledJob> findAllJobs() {
+        return jobScheduler.findAllJobs();
+    }
 }
