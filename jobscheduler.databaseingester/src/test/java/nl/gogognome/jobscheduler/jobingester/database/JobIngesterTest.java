@@ -57,22 +57,25 @@ public class JobIngesterTest {
     }
 
     @Test
-    public void ingestJobs_fourJobCommandsWithDifferentCommands_eachOfTheCommandsAreHandledAndJobCommandsArDeletedFromDatabase() throws SQLException {
+    public void ingestJobs_fiveJobCommandsWithDifferentCommands_eachOfTheCommandsAreHandledAndJobCommandsArDeletedFromDatabase() throws SQLException {
         JobCommand jobCommand1 = JobCommandBuilder.buildJob("1", Command.SCHEDULE);
         jobCommandsInDatabase.add(jobCommand1);
-        JobCommand jobCommand2 = JobCommandBuilder.buildJob("1", Command.RESCHEDULE);
+        JobCommand jobCommand2 = JobCommandBuilder.buildJob("2", Command.RESCHEDULE);
         jobCommandsInDatabase.add(jobCommand2);
-        JobCommand jobCommand3 = JobCommandBuilder.buildJob("1", Command.JOB_FINISHED);
+        JobCommand jobCommand3 = JobCommandBuilder.buildJob("3", Command.JOB_FINISHED);
         jobCommandsInDatabase.add(jobCommand3);
-        JobCommand jobCommand4 = JobCommandBuilder.buildJob("1", Command.JOB_FAILED);
+        JobCommand jobCommand4 = JobCommandBuilder.buildJob("4", Command.JOB_FAILED);
         jobCommandsInDatabase.add(jobCommand4);
+        JobCommand jobCommand5 = JobCommandBuilder.buildJob("5", Command.REMOVE);
+        jobCommandsInDatabase.add(jobCommand5);
 
         jobIngester.ingestJobs();
 
         verify(jobScheduler).schedule(eq(jobCommand1.getJob()));
         verify(jobScheduler).reschedule(eq(jobCommand2.getJob()));
         verify(jobScheduler).jobFinished(eq(jobCommand3.getJob().getId()));
-        verify(jobScheduler).jobFailed(eq(jobCommand3.getJob().getId()));
+        verify(jobScheduler).jobFailed(eq(jobCommand4.getJob().getId()));
+        verify(jobScheduler).remove(eq(jobCommand5.getJob().getId()));
         verify(jobCommandDAO).deleteJobCommands(jobCommandsInDatabase);
     }
 
