@@ -4,6 +4,8 @@ public class JobIngesterProperties {
 
     private String connectionName = "nl.gogognome.jobscheduler.jobingester";
     private String tableName = "NlGogognomeJobsToIngest";
+    private String commandIdSequence = "command_id_sequence";
+    private String commandIdColumn = "command_id";
     private String commandColumn = "command";
     private String idColumn = "id";
     private String scheduledAtInstantColumn = "scheduledAtInstant";
@@ -27,6 +29,22 @@ public class JobIngesterProperties {
 
     public void setTableName(String tableName) {
         this.tableName = tableName;
+    }
+
+    public String getCommandIdSequence() {
+        return commandIdSequence;
+    }
+
+    public void setCommandIdSequence(String commandIdSequence) {
+        this.commandIdSequence = commandIdSequence;
+    }
+
+    public String getCommandIdColumn() {
+        return commandIdColumn;
+    }
+
+    public void setCommandIdColumn(String commandIdColumn) {
+        this.commandIdColumn = commandIdColumn;
     }
 
     public String getCommandColumn() {

@@ -80,9 +80,9 @@ public class JobCommandDAOTest {
         properties.setSelectJobCommandsQuery("SELECT * FROM " + properties.getTableName() + " LIMIT 1");
         NewTransaction.runs(() -> {
             JobCommand jobCommand1 = JobCommandBuilder.buildJob("1", Command.SCHEDULE);
-            jobCommandDAO.create(jobCommand1);
+            jobCommand1 = jobCommandDAO.create(jobCommand1);
             JobCommand jobCommand2 = JobCommandBuilder.buildJob("2", Command.RESCHEDULE);
-            jobCommandDAO.create(jobCommand2);
+            jobCommand2 = jobCommandDAO.create(jobCommand2);
 
             List<JobCommand> jobCommands = jobCommandDAO.findJobCommands();
 
@@ -110,7 +110,7 @@ public class JobCommandDAOTest {
     public void delete_oneJobCommandToDelete_deletesJobCommand() throws SQLException {
         NewTransaction.runs(() -> {
             JobCommand jobCommand = JobCommandBuilder.buildJob("1", Command.SCHEDULE);
-            jobCommandDAO.create(jobCommand);
+            jobCommand = jobCommandDAO.create(jobCommand);
 
             jobCommandDAO.deleteJobCommands(singletonList(jobCommand));
 
@@ -123,9 +123,9 @@ public class JobCommandDAOTest {
     public void delete_twoJobCommandsToDelete_deletesJobCommands() throws SQLException {
         NewTransaction.runs(() -> {
             JobCommand jobCommand1 = JobCommandBuilder.buildJob("1", Command.SCHEDULE);
-            jobCommandDAO.create(jobCommand1);
+            jobCommand1 = jobCommandDAO.create(jobCommand1);
             JobCommand jobCommand2 = JobCommandBuilder.buildJob("2", Command.RESCHEDULE);
-            jobCommandDAO.create(jobCommand2);
+            jobCommand2 = jobCommandDAO.create(jobCommand2);
 
             jobCommandDAO.deleteJobCommands(asList(jobCommand1, jobCommand2));
 
