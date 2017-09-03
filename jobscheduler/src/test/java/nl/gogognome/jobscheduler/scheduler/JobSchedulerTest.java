@@ -88,6 +88,8 @@ public class JobSchedulerTest {
         jobScheduler.jobFailed(scheduledJob.getJob().getId());
 
         ScheduledJob updatedScheduledJob = getUpdatedScheduledJob();
+        verify(jobPersister).update(scheduledJob);
+        verify(runnableJobFinder).updateJob(scheduledJob);
         assertEquals(ERROR, updatedScheduledJob.getState());
         assertNull(updatedScheduledJob.getRequesterId());
     }
@@ -124,6 +126,8 @@ public class JobSchedulerTest {
         jobScheduler.reschedule(scheduledJob.getJob());
 
         ScheduledJob actualScheduledJob = getUpdatedScheduledJob();
+        verify(jobPersister).update(scheduledJob);
+        verify(runnableJobFinder).updateJob(scheduledJob);
         assertEquals(IDLE, actualScheduledJob.getState());
         assertNull(actualScheduledJob.getRequesterId());
     }
@@ -208,7 +212,7 @@ public class JobSchedulerTest {
     }
 
     @Test
-    public void startNextRunnableJob_firstJobAddedAfterOneSecond_ReturnsJobWithStateUpdateAfterOneSecond() throws InterruptedException {
+    public void startNextRunnableJob_firstJobAddedAfterOneSecond_returnsJobWithStateUpdateAfterOneSecond() throws InterruptedException {
         ScheduledJob scheduledJob = ScheduledJobFakes.defaultIdleJob();
         long start = System.currentTimeMillis();
         long jobAddDelay = 1000;
@@ -255,10 +259,12 @@ public class JobSchedulerTest {
     }
 
     private void assertJobIsStarted(Job startedJob) {
-        ScheduledJob actualScheduledJob = getUpdatedScheduledJob();
-        assertEquals(actualScheduledJob.getJob(), startedJob);
-        assertEquals(RUNNING, actualScheduledJob.getState());
-        assertEquals("tester", actualScheduledJob.getRequesterId());
+        ScheduledJob scheduledJob = getUpdatedScheduledJob();
+        verify(jobPersister).update(scheduledJob);
+        verify(runnableJobFinder).updateJob(scheduledJob);
+        assertEquals(scheduledJob.getJob(), startedJob);
+        assertEquals(RUNNING, scheduledJob.getState());
+        assertEquals("tester", scheduledJob.getRequesterId());
     }
 
     private ScheduledJob scheduleIdleJob() {
@@ -285,6 +291,7 @@ public class JobSchedulerTest {
     private ScheduledJob getUpdatedScheduledJob() {
         ArgumentCaptor<ScheduledJob> argumentCaptor = ArgumentCaptor.forClass(ScheduledJob.class);
         verify(jobPersister).update(argumentCaptor.capture());
+
         return argumentCaptor.getValue();
     }
 
