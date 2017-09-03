@@ -6,6 +6,7 @@ import nl.gogognome.dataaccess.dao.ResultSetWrapper;
 import nl.gogognome.jobscheduler.scheduler.Job;
 
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.List;
 
 public class JobCommandDAO extends AbstractDomainClassDAO<JobCommand>{
@@ -47,10 +48,11 @@ public class JobCommandDAO extends AbstractDomainClassDAO<JobCommand>{
     protected JobCommand getObjectFromResultSet(ResultSetWrapper result) throws SQLException {
         String commandId = result.getString(properties.getCommandIdColumn());
 
-        Job job = new Job(result.getString(properties.getIdColumn()));
-        job.setScheduledAtInstant(result.getInstant(properties.getScheduledAtInstantColumn()));
-        job.setType(result.getString(properties.getTypeColumn()));
-        job.setData(result.getBytes(properties.getDataColumn()));
+        String id = result.getString(properties.getIdColumn());
+        String type = result.getString(properties.getTypeColumn());
+        byte[] data = result.getBytes(properties.getDataColumn());
+        Instant scheduledAtInstant = result.getInstant(properties.getScheduledAtInstantColumn());
+        Job job = new Job(id, type, data, scheduledAtInstant);
 
         Command command = result.getEnum(Command.class, properties.getCommandColumn());
 

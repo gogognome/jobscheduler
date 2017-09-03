@@ -9,8 +9,8 @@ import nl.gogognome.jobscheduler.jobpersister.database.DatabaseJobPersisterPrope
 import nl.gogognome.jobscheduler.jobpersister.database.ScheduledJobDAO;
 import nl.gogognome.jobscheduler.scheduler.Job;
 import nl.gogognome.jobscheduler.scheduler.JobScheduler;
-import nl.gogognome.jobscheduler.scheduler.ReadonlyScheduledJob;
 import nl.gogognome.jobscheduler.scheduler.RunnableJobFinder;
+import nl.gogognome.jobscheduler.scheduler.ScheduledJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -95,10 +95,11 @@ public class JobSchedulerService {
         return RequireTransaction.returns(() -> {
             validateParameters(runnable);
 
-            Job job = new Job(JOB_ID_PREFIX + nextId.getAndIncrement());
-            job.setScheduledAtInstant(Instant.now());
-            job.setType(runnable.getClass().getName());
-            job.setData(GSON.toJson(runnable).getBytes(CHARSET));
+            Job job = new Job(
+                    JOB_ID_PREFIX + nextId.getAndIncrement(),
+                    runnable.getClass().getName(),
+                    GSON.toJson(runnable).getBytes(CHARSET),
+                    Instant.now());
 
             jobCommandDAO.create(new JobCommand(SCHEDULE, job));
             LOGGER.trace("Scheduled job with type " + job.getType() + " and id " + job.getId());
@@ -113,7 +114,7 @@ public class JobSchedulerService {
      */
     public void remove(String jobId) {
         RequireTransaction.runs(() -> {
-            jobCommandDAO.create(new JobCommand(REMOVE, new Job(jobId)));
+            jobCommandDAO.create(new JobCommand(REMOVE, new Job(jobId, null, null, null)));
             LOGGER.trace("Removed job with id " + jobId);
         });
     }
@@ -159,7 +160,7 @@ public class JobSchedulerService {
         }
     }
 
-    public List<ReadonlyScheduledJob> findAllJobs() {
+    public List<ScheduledJob> findAllJobs() {
         return jobScheduler.findAllJobs();
     }
 }

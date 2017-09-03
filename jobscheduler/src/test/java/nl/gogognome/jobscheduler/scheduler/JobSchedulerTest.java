@@ -1,5 +1,7 @@
 package nl.gogognome.jobscheduler.scheduler;
 
+import nl.gogognome.jobscheduler.JobFakes;
+import nl.gogognome.jobscheduler.ScheduledJobFakes;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -18,11 +20,6 @@ public class JobSchedulerTest {
     private JobPersister jobPersister = mock(JobPersister.class);
     private JobScheduler jobScheduler = new JobScheduler(runnableJobFinder, jobPersister);
 
-    private Job job1 = new Job("one");
-    private ScheduledJob scheduledJob1 = new ScheduledJob(job1);
-    private Job job2 = new Job("two");
-    private ScheduledJob scheduledJob2 = new ScheduledJob(job2);
-
     @Test
     public void schedule_null_throwsException() {
         assertThrows(NullPointerException.class, () -> jobScheduler.schedule(null));
@@ -30,12 +27,13 @@ public class JobSchedulerTest {
 
     @Test
     public void schedule_addsJobToJobFinderAndPersistsJob() {
-        jobScheduler.schedule(job1);
+        Job job = JobFakes.defaultJob();
+        jobScheduler.schedule(job);
 
         ArgumentCaptor<ScheduledJob> argumentCaptor = ArgumentCaptor.forClass(ScheduledJob.class);
         verify(runnableJobFinder).addJob(argumentCaptor.capture());
         ScheduledJob createdScheduledJob = argumentCaptor.getValue();
-        assertSame(job1, createdScheduledJob.getJob());
+        assertSame(job, createdScheduledJob.getJob());
         assertEquals(IDLE, createdScheduledJob.getState());
         assertNull(createdScheduledJob.getRequesterId());
 
@@ -44,14 +42,13 @@ public class JobSchedulerTest {
 
     @Test
     public void jobFinished_existingRunningJob_jobIsRemoved() {
-        scheduledJob1.setRequesterId("tester");
-        scheduledJob1.setState(RUNNING);
-        when(runnableJobFinder.findById(job1.getId())).thenReturn(scheduledJob1);
+        ScheduledJob scheduledJob = scheduleRunningJob();
+        String jobId = scheduledJob.getJob().getId();
 
-        jobScheduler.jobFinished(job1.getId());
+        jobScheduler.jobFinished(jobId);
 
-        verify(runnableJobFinder).removeJob(job1.getId());
-        verify(jobPersister).remove(job1.getId());
+        verify(runnableJobFinder).removeJob(jobId);
+        verify(jobPersister).remove(jobId);
     }
 
     @Test
@@ -60,23 +57,23 @@ public class JobSchedulerTest {
     }
 
     @Test
-    public void stopSuccessfull_existingNotRunningJob_throwsException() {
-        scheduledJob1.setRequesterId("tester");
-        scheduledJob1.setState(IDLE);
-        when(runnableJobFinder.findById(job1.getId())).thenReturn(scheduledJob1);
+    public void stopSuccessfully_existingNotRunningJob_throwsException() {
+        ScheduledJob scheduledJob = scheduleIdleJob();
+        String jobId = scheduledJob.getJob().getId();
 
-        assertThrows(IllegalJobStateException.class, () -> jobScheduler.jobFinished(job1.getId()));
+        assertThrows(IllegalJobStateException.class, () -> jobScheduler.jobFinished(jobId));
 
-        verify(runnableJobFinder, never()).removeJob(job1.getId());
-        verify(jobPersister, never()).remove(job1.getId());
+        verify(runnableJobFinder, never()).removeJob(jobId);
+        verify(jobPersister, never()).remove(jobId);
     }
 
     @Test
     public void stopSuccessfully_notExistingJob_throwsException() {
-        assertThrows(UnknownJobException.class, () -> jobScheduler.jobFinished(job1.getId()));
+        String nonExistentJobId = "bla";
+        assertThrows(UnknownJobException.class, () -> jobScheduler.jobFinished(nonExistentJobId));
 
-        verify(runnableJobFinder, never()).removeJob(job1.getId());
-        verify(jobPersister, never()).remove(job1.getId());
+        verify(runnableJobFinder, never()).removeJob(nonExistentJobId);
+        verify(jobPersister, never()).remove(nonExistentJobId);
     }
 
     @Test
@@ -86,24 +83,21 @@ public class JobSchedulerTest {
 
     @Test
     public void jobFailed_existingRunningJob_jobIsUpdated() {
-        scheduledJob1.setRequesterId("tester");
-        scheduledJob1.setState(RUNNING);
-        when(runnableJobFinder.findById(job1.getId())).thenReturn(scheduledJob1);
+        ScheduledJob scheduledJob = scheduleRunningJob();
 
-        jobScheduler.jobFailed(job1.getId());
+        jobScheduler.jobFailed(scheduledJob.getJob().getId());
 
-        verify(jobPersister).update(same(scheduledJob1));
-        assertEquals(ERROR, scheduledJob1.getState());
-        assertNull(scheduledJob1.getRequesterId());
+        ScheduledJob updatedScheduledJob = getUpdatedScheduledJob();
+        assertEquals(ERROR, updatedScheduledJob.getState());
+        assertNull(updatedScheduledJob.getRequesterId());
     }
 
     @Test
     public void jobFailed_existingNotRunningJob_throwsException() {
-        scheduledJob1.setRequesterId("tester");
-        scheduledJob1.setState(IDLE);
-        when(runnableJobFinder.findById(job1.getId())).thenReturn(scheduledJob1);
+        ScheduledJob scheduledJob = scheduleIdleJob();
+        String jobId = scheduledJob.getJob().getId();
 
-        assertThrows(IllegalJobStateException.class, () -> jobScheduler.jobFailed(job1.getId()));
+        assertThrows(IllegalJobStateException.class, () -> jobScheduler.jobFailed(jobId));
 
         verify(runnableJobFinder, never()).updateJob(any(ScheduledJob.class));
         verify(jobPersister, never()).update(any(ScheduledJob.class));
@@ -112,7 +106,7 @@ public class JobSchedulerTest {
 
     @Test
     public void jobFailed_notExistingJob_throwsException() {
-        assertThrows(UnknownJobException.class, () -> jobScheduler.jobFailed(job1.getId()));
+        assertThrows(UnknownJobException.class, () -> jobScheduler.jobFailed("bla"));
 
         verify(runnableJobFinder, never()).updateJob(any(ScheduledJob.class));
         verify(jobPersister, never()).update(any(ScheduledJob.class));
@@ -124,21 +118,19 @@ public class JobSchedulerTest {
     }
 
     @Test
-    public void reschedule_existingNotRunningJob_jobIsRescheduled() {
-        scheduledJob1.setRequesterId("tester");
-        scheduledJob1.setState(RUNNING);
-        when(runnableJobFinder.findById(job1.getId())).thenReturn(scheduledJob1);
+    public void reschedule_existingRunningJob_jobIsRescheduled() {
+        ScheduledJob scheduledJob = scheduleRunningJob();
 
-        jobScheduler.reschedule(job1);
+        jobScheduler.reschedule(scheduledJob.getJob());
 
-        verify(jobPersister).update(same(scheduledJob1));
-        assertEquals(IDLE, scheduledJob1.getState());
-        assertNull(scheduledJob1.getRequesterId());
+        ScheduledJob actualScheduledJob = getUpdatedScheduledJob();
+        assertEquals(IDLE, actualScheduledJob.getState());
+        assertNull(actualScheduledJob.getRequesterId());
     }
 
     @Test
     public void reschedule_notExistingJob_throwsException() {
-        assertThrows(UnknownJobException.class, () -> jobScheduler.reschedule(job1));
+        assertThrows(UnknownJobException.class, () -> jobScheduler.reschedule(JobFakes.defaultJob()));
 
         verify(runnableJobFinder, never()).updateJob(any(ScheduledJob.class));
         verify(jobPersister, never()).update(any(ScheduledJob.class));
@@ -146,11 +138,9 @@ public class JobSchedulerTest {
 
     @Test
     public void reschedule_existingNotRunningJob_throwsException() {
-        scheduledJob1.setRequesterId("tester");
-        scheduledJob1.setState(IDLE);
-        when(runnableJobFinder.findById(job1.getId())).thenReturn(scheduledJob1);
+        ScheduledJob scheduledJob = scheduleIdleJob();
 
-        assertThrows(IllegalJobStateException.class, () -> jobScheduler.reschedule(job1));
+        assertThrows(IllegalJobStateException.class, () -> jobScheduler.reschedule(scheduledJob.getJob()));
 
         verify(runnableJobFinder, never()).updateJob(any(ScheduledJob.class));
         verify(jobPersister, never()).update(any(ScheduledJob.class));
@@ -164,38 +154,39 @@ public class JobSchedulerTest {
     @Test
     public void tryStartNextRunnableJob_noJobsAdded_ReturnsNull() {
         Job startedJob = jobScheduler.tryStartNextRunnableJob("tester");
+        setupNextRunnableJob(null);
 
         assertNull(startedJob);
     }
 
     @Test
     public void tryStartNextRunnableJob_idleJobIsChosen_ReturnsJobWithStateUpdated() {
-        scheduledJob1.setState(IDLE);
-        when(runnableJobFinder.findNextRunnableJob()).thenReturn(scheduledJob1);
+        ScheduledJob scheduledJob = scheduleIdleJob();
+        setupNextRunnableJob(scheduledJob);
 
         Job startedJob = jobScheduler.tryStartNextRunnableJob("tester");
 
-        assertJobIsStarted(job1, startedJob);
+        assertJobIsStarted(startedJob);
     }
 
     @Test
     public void tryStartNextRunnableJob_noneIdleJobChosen_Fails() {
-        scheduledJob1.setState(RUNNING);
-        when(runnableJobFinder.findNextRunnableJob()).thenReturn(scheduledJob1);
+        ScheduledJob scheduledJob = scheduleRunningJob();
+        setupNextRunnableJob(scheduledJob);
 
         assertThrows(IllegalJobStateException.class, () -> jobScheduler.tryStartNextRunnableJob("tester"));
-        verify(runnableJobFinder, never()).updateJob(scheduledJob1);
-        verify(jobPersister, never()).update(scheduledJob1);
+        verify(runnableJobFinder, never()).updateJob(scheduledJob);
+        verify(jobPersister, never()).update(scheduledJob);
     }
 
     @Test
     public void startNextRunnableJob_idleJobPresent_ReturnsJobWithStateUpdated() throws InterruptedException {
-        scheduledJob1.setState(IDLE);
-        when(runnableJobFinder.findNextRunnableJob()).thenReturn(scheduledJob1);
+        ScheduledJob scheduledJob = scheduleIdleJob();
+        setupNextRunnableJob(scheduledJob);
 
         Job startedJob = jobScheduler.startNextRunnableJob("tester", 1000L);
 
-        assertJobIsStarted(job1, startedJob);
+        assertJobIsStarted(startedJob);
     }
 
     @Test
@@ -205,8 +196,8 @@ public class JobSchedulerTest {
         Job job = jobScheduler.startNextRunnableJob("tester", timeout);
 
         assertNull(job);
-        verify(runnableJobFinder, never()).updateJob(scheduledJob1);
-        verify(jobPersister, never()).update(scheduledJob1);
+        verify(runnableJobFinder, never()).updateJob(any(ScheduledJob.class));
+        verify(jobPersister, never()).update(any(ScheduledJob.class));
         assertTrue(System.currentTimeMillis() >= expectedEndTime);
     }
 
@@ -218,6 +209,7 @@ public class JobSchedulerTest {
 
     @Test
     public void startNextRunnableJob_firstJobAddedAfterOneSecond_ReturnsJobWithStateUpdateAfterOneSecond() throws InterruptedException {
+        ScheduledJob scheduledJob = ScheduledJobFakes.defaultIdleJob();
         long start = System.currentTimeMillis();
         long jobAddDelay = 1000;
         long timeout = jobAddDelay + 3000;
@@ -225,9 +217,9 @@ public class JobSchedulerTest {
         executorService.submit(() -> {
             try {
                 Thread.sleep(jobAddDelay);
-                scheduledJob1.setState(IDLE);
-                when(runnableJobFinder.findNextRunnableJob()).thenReturn(scheduledJob1);
-                jobScheduler.schedule(job1);
+                scheduleJob(scheduledJob);
+                setupNextRunnableJob(scheduledJob);
+                jobScheduler.schedule(scheduledJob.getJob());
             } catch (InterruptedException e) {
                 // ignore exception
             }
@@ -235,7 +227,7 @@ public class JobSchedulerTest {
 
         Job startedJob = jobScheduler.startNextRunnableJob("tester", timeout);
 
-        assertJobIsStarted(job1, startedJob);
+        assertJobIsStarted(startedJob);
         assertTrue(System.currentTimeMillis() >= start + jobAddDelay);
         assertTrue(System.currentTimeMillis() < start + timeout);
     }
@@ -251,6 +243,8 @@ public class JobSchedulerTest {
 
     @Test
     public void loadPersistedJobs_replacesJobsInRunnableJobFinderByPersistedJobs() {
+        ScheduledJob scheduledJob1 = ScheduledJobFakes.defaultIdleJob();
+        ScheduledJob scheduledJob2 = ScheduledJobFakes.defaultIdleJob();
         when(jobPersister.findAllJobs()).thenReturn(Arrays.asList(scheduledJob1, scheduledJob2));
 
         jobScheduler.loadPersistedJobs();
@@ -260,11 +254,38 @@ public class JobSchedulerTest {
         verify(runnableJobFinder).addJob(scheduledJob2);
     }
 
-    private void assertJobIsStarted(Job expectedScheduledJob, Job startedJob) {
-        assertEquals(expectedScheduledJob, startedJob);
-        ScheduledJob startedScheduledJob = startedJob == job1 ? scheduledJob1 : scheduledJob2;
-        assertEquals(RUNNING, startedScheduledJob.getState());
-        assertEquals("tester", startedScheduledJob.getRequesterId());
-        verify(jobPersister).update(startedScheduledJob);
+    private void assertJobIsStarted(Job startedJob) {
+        ScheduledJob actualScheduledJob = getUpdatedScheduledJob();
+        assertEquals(actualScheduledJob.getJob(), startedJob);
+        assertEquals(RUNNING, actualScheduledJob.getState());
+        assertEquals("tester", actualScheduledJob.getRequesterId());
     }
+
+    private ScheduledJob scheduleIdleJob() {
+        ScheduledJob scheduledJob = ScheduledJobFakes.defaultIdleJob();
+        scheduleJob(scheduledJob);
+        return scheduledJob;
+    }
+
+    private ScheduledJob scheduleRunningJob() {
+        ScheduledJob scheduledJob = ScheduledJobFakes.runningJob();
+        scheduleJob(scheduledJob);
+        return scheduledJob;
+    }
+
+    private void scheduleJob(ScheduledJob scheduledJob) {
+        String jobId = scheduledJob.getJob().getId();
+        when(runnableJobFinder.findById(jobId)).thenReturn(scheduledJob);
+    }
+
+    private void setupNextRunnableJob(ScheduledJob scheduledJob) {
+        when(runnableJobFinder.findNextRunnableJob()).thenReturn(scheduledJob);
+    }
+
+    private ScheduledJob getUpdatedScheduledJob() {
+        ArgumentCaptor<ScheduledJob> argumentCaptor = ArgumentCaptor.forClass(ScheduledJob.class);
+        verify(jobPersister).update(argumentCaptor.capture());
+        return argumentCaptor.getValue();
+    }
+
 }

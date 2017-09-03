@@ -2,55 +2,58 @@ package nl.gogognome.jobscheduler.scheduler;
 
 import java.time.Instant;
 
+import static nl.gogognome.jobscheduler.scheduler.JobState.ERROR;
+import static nl.gogognome.jobscheduler.scheduler.JobState.IDLE;
+import static nl.gogognome.jobscheduler.scheduler.JobState.RUNNING;
+
 /**
  * A ScheduledJob represents a Job that is managed by the scheduler.
  */
-public class ScheduledJob implements ReadonlyScheduledJob {
+public class ScheduledJob {
 
     private final Job job;
 
-    private JobState state;
-    private String requesterId;
-    private Instant timeoutAtInstant;
+    private final JobState state;
+    private final String requesterId;
+    private final Instant timeoutAtInstant;
 
-    public ScheduledJob(Job job) {
+    public ScheduledJob(Job job, JobState state) {
+        this(job, state, null, null);
+    }
+
+    public ScheduledJob(Job job, JobState state, String requesterId, Instant timeoutAtInstant) {
         this.job = job;
+        this.state = state;
+        this.requesterId = requesterId;
+        this.timeoutAtInstant = timeoutAtInstant;
     }
 
     public Job getJob() {
         return job;
     }
 
-    @Override
-    public ReadonlyJob getReadonlyJob() {
-        return job;
-    }
-
-    @Override
     public JobState getState() {
         return state;
     }
 
-    public void setState(JobState state) {
-        this.state = state;
-    }
-
-    @Override
     public String getRequesterId() {
         return requesterId;
     }
 
-    public void setRequesterId(String requesterId) {
-        this.requesterId = requesterId;
-    }
-
-    @Override
     public Instant getTimeoutAtInstant() {
         return timeoutAtInstant;
     }
 
-    public void setTimeoutAtInstant(Instant timeoutAtInstant) {
-        this.timeoutAtInstant = timeoutAtInstant;
+    public ScheduledJob onStart(String requesterId, Instant timeoutAtInstant) {
+        return new ScheduledJob(job, RUNNING, requesterId, timeoutAtInstant);
+    }
+
+    public ScheduledJob onReschedule() {
+        return new ScheduledJob(job, IDLE, null, null);
+    }
+
+    public ScheduledJob onError() {
+        return new ScheduledJob(job, ERROR, null, null);
     }
 
     @Override
@@ -71,5 +74,4 @@ public class ScheduledJob implements ReadonlyScheduledJob {
     public String toString() {
         return "ScheduledJob-" + getJob().getId();
     }
-
 }

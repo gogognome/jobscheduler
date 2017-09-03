@@ -2,10 +2,12 @@ package nl.gogognome.jobscheduler.runnablejobfinder;
 
 import nl.gogognome.jobscheduler.scheduler.*;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+
+import static nl.gogognome.jobscheduler.scheduler.JobState.IDLE;
 
 public class FifoRunnableJobFinder implements RunnableJobFinder {
 
@@ -42,10 +44,11 @@ public class FifoRunnableJobFinder implements RunnableJobFinder {
 
     @Override
     public void removeJob(String jobId) {
-        boolean jobWasPresent = scheduledJobs.remove(new ScheduledJob(new Job(jobId)));
-        if (!jobWasPresent) {
+        ScheduledJob scheduledJob = findById(jobId);
+        if (scheduledJob == null) {
             throw new UnknownJobException("Cannot remove job with id " + jobId + " because it does not exist!");
         }
+        scheduledJobs.remove(scheduledJob);
     }
 
     @Override
@@ -53,7 +56,7 @@ public class FifoRunnableJobFinder implements RunnableJobFinder {
         Instant now = Instant.now();
         ScheduledJob bestCandidate = null;
         for (ScheduledJob scheduledJob : scheduledJobs) {
-            if (scheduledJob.getState() == JobState.IDLE) {
+            if (scheduledJob.getState() == IDLE) {
                 if (scheduledJob.getJob().getScheduledAtInstant() != null && scheduledJob.getJob().getScheduledAtInstant().isAfter(now)) {
                     continue;
                 }
@@ -66,12 +69,20 @@ public class FifoRunnableJobFinder implements RunnableJobFinder {
     }
 
     @Override
-    public List<ReadonlyScheduledJob> findAllJobs() {
-        return Collections.unmodifiableList(scheduledJobs);
+    public List<ScheduledJob> findAllJobs() {
+        // Return a copy of the list. The schedule jobs are immutable, so it is safe to just return a copy of
+        // the list of scheduled jobs. Returning Collections.unmodifiableList(scheduledJobs) has as drawback that
+        // the returned list might change when jobs are scheduled, started or finished.
+        return new ArrayList<>(scheduledJobs);
     }
 
     @Override
     public void removeAllScheduledJobs() {
         scheduledJobs.clear();
+    }
+
+    @Override
+    public Instant getTimeoutInstant(Job jobToStart) {
+        return Instant.now().plus(Duration.ofHours(1));
     }
 }

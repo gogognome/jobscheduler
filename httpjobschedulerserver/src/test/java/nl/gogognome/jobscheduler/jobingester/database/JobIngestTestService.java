@@ -4,6 +4,8 @@ import nl.gogognome.dataaccess.transaction.NewTransaction;
 import nl.gogognome.jobscheduler.scheduler.Job;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
+
 @Component
 public class JobIngestTestService {
 
@@ -14,7 +16,7 @@ public class JobIngestTestService {
     }
 
     public void createJobCommand(Command command, String jobId) {
-        NewTransaction.runs(() -> new JobCommandDAO(properties).create(new JobCommand(command, new Job(jobId))));
+        createJobCommand(command, new Job(jobId, "someType", null, Instant.now()));
     }
 
     public void createJobCommand(Command command, Job job) {

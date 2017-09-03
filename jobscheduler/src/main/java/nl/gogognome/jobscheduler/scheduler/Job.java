@@ -5,47 +5,34 @@ import java.time.Instant;
 /**
  * A job to be scheduled.
  */
-public class Job implements ReadonlyJob {
+public class Job {
 
     private final String id;
-    private String type;
-    private byte[] data;
-    private Instant scheduledAtInstant;
+    private final String type;
+    private final byte[] data;
+    private final Instant scheduledAtInstant;
 
-    public Job(String id) {
+    public Job(String id, String type, byte[] data, Instant scheduledAtInstant) {
         this.id = id;
+        this.type = type;
+        this.data = data != null ? data.clone() : null;
+        this.scheduledAtInstant = scheduledAtInstant;
     }
 
-    @Override
     public String getId() {
         return id;
     }
 
-    @Override
     public String getType() {
         return type;
     }
 
-    public void setType(String type) {
-        this.type = type;
-    }
-
-    @Override
     public byte[] getData() {
         return data != null ? data.clone() : null;
     }
 
-    public void setData(byte[] data) {
-        this.data = data != null ? data.clone() : null;
-    }
-
-    @Override
     public Instant getScheduledAtInstant() {
         return scheduledAtInstant;
-    }
-
-    public void setScheduledAtInstant(Instant scheduledAtInstant) {
-        this.scheduledAtInstant = scheduledAtInstant;
     }
 
     @Override

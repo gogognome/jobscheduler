@@ -1,5 +1,6 @@
 package nl.gogognome.jobscheduler.scheduler;
 
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -53,10 +54,17 @@ public interface RunnableJobFinder {
      * Ensure to return an unmodifiable collection of jobs
      * @return the jobs
      */
-    List<ReadonlyScheduledJob> findAllJobs();
+    List<ScheduledJob> findAllJobs();
 
     /**
      * Removes all scheduled jobs.
      */
     void removeAllScheduledJobs();
+
+    /**
+     * Determines the time out instant for the job. This method is called when the job is started.
+     * @param jobToStart the job to start
+     * @return the time out instant
+     */
+    Instant getTimeoutInstant(Job jobToStart);
 }

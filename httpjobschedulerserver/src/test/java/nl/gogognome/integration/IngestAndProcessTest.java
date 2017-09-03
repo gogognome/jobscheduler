@@ -108,11 +108,7 @@ public class IngestAndProcessTest {
     }
 
     private Job buildJob(String jobId) {
-        Job job = new Job(jobId);
-        job.setType("no-op");
-        job.setData(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 });
-        job.setScheduledAtInstant(Instant.now());
-        return job;
+        return new Job(jobId, "no-op", new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }, Instant.now());
     }
 
     private class JobRequester implements Callable<Void> {

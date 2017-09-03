@@ -5,7 +5,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static nl.gogognome.jobscheduler.scheduler.JobState.ERROR;
 import static nl.gogognome.jobscheduler.scheduler.JobState.IDLE;
 import static nl.gogognome.jobscheduler.scheduler.JobState.RUNNING;
 
@@ -44,8 +43,7 @@ public class JobScheduler {
     public void schedule(Job job) {
         ensureIsNotNull(job, "job");
         synchronized (lock) {
-            ScheduledJob scheduledJob = new ScheduledJob(job);
-            scheduledJob.setState(IDLE);
+            ScheduledJob scheduledJob = new ScheduledJob(job, IDLE);
             runnableJobFinder.addJob(scheduledJob);
             jobPersister.create(scheduledJob);
             lock.notify();
@@ -64,8 +62,7 @@ public class JobScheduler {
                 throw new IllegalJobStateException("Cannot stop the job with id " + job.getId() + " because its state is "
                         + scheduledJob.getState() + " instead of " + RUNNING);
             }
-            scheduledJob.setState(IDLE);
-            scheduledJob.setRequesterId(null);
+            scheduledJob = scheduledJob.onReschedule();
             runnableJobFinder.updateJob(scheduledJob);
             jobPersister.update(scheduledJob);
             lock.notify();
@@ -79,7 +76,7 @@ public class JobScheduler {
      *     <li>remove a failed job that cannot be rescheduled (retried) anymore.</li>
      *     <li>remove a job that has been scheduled in the future but is no longer needed.</li>
      * </ul>
-     * @param jobId
+     * @param jobId the id of the job
      */
     public void remove(String jobId) {
         ensureIsNotNull(jobId, "jobId");
@@ -104,8 +101,8 @@ public class JobScheduler {
                 throw new IllegalJobStateException("Cannot stop the job with id " + jobId + " because its state is "
                         + scheduledJob.getState() + " instead of " + RUNNING);
             }
-            scheduledJob.setState(ERROR);
-            scheduledJob.setRequesterId(null);
+            scheduledJob = scheduledJob.onError();
+            runnableJobFinder.updateJob(scheduledJob);
             jobPersister.update(scheduledJob);
             lock.notify();
         }
@@ -202,18 +199,15 @@ public class JobScheduler {
 			return null;
 		}
 
+        Job jobToStart = scheduledJob.getJob();
         if (scheduledJob.getState() != IDLE) {
-			throw new IllegalJobStateException("Cannot start job with id " + scheduledJob.getJob().getId() + " because its state is "
+			throw new IllegalJobStateException("Cannot start job with id " + jobToStart.getId() + " because its state is "
 					+ scheduledJob.getState() + " instead of " + IDLE);
 		}
-        start(jobRequesterId, scheduledJob);
-        return scheduledJob.getJob();
-    }
-
-    private void start(String jobRequesterId, ScheduledJob scheduledJob) {
-        scheduledJob.setState(JobState.RUNNING);
-        scheduledJob.setRequesterId(jobRequesterId);
+        scheduledJob = scheduledJob.onStart(jobRequesterId, runnableJobFinder.getTimeoutInstant(jobToStart));
+        runnableJobFinder.updateJob(scheduledJob);
         jobPersister.update(scheduledJob);
+        return jobToStart;
     }
 
     public void runBatch(Runnable runnable) {
@@ -226,7 +220,7 @@ public class JobScheduler {
      * Gets a list of the jobs that have been scheduled, including jobs that are currently running or have failed.
      * @return the jobs
      */
-    public List<ReadonlyScheduledJob> findAllJobs() {
+    public List<ScheduledJob> findAllJobs() {
         synchronized (lock) {
             return runnableJobFinder.findAllJobs();
         }

@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 public class Properties {
 
     private int requestTimeoutMilliseconds = 30*1000;
-    private String databaseConnectionUrl = "jdbc:h2:mem:httpjobscheduler";
+    private String databaseConnectionUrl = "jdbc:h2:mem:httpjobscheduler" + System.currentTimeMillis();
     private String databaseUsername = "sa";
     private String databasePassword = "";
     private String dataEncoding = "BASE64";

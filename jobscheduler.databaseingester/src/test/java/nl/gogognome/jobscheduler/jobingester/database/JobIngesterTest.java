@@ -6,6 +6,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,12 +45,12 @@ public class JobIngesterTest {
 
     @Test
     public void ingestJobs_oneScheduleCommand_schedulesJobAndNoOtherCommandsForwardedToSchedulerAndJobDeletedFromDatabase() throws SQLException {
-        Job job1 = new Job("1");
-        jobCommandsInDatabase.add(new JobCommand(Command.SCHEDULE, job1));
+        Job job = buildJob();
+        jobCommandsInDatabase.add(new JobCommand(Command.SCHEDULE, job));
 
         jobIngester.ingestJobs();
 
-        verify(jobScheduler).schedule(eq(job1));
+        verify(jobScheduler).schedule(eq(job));
         verify(jobScheduler, never()).reschedule(any(Job.class));
         verify(jobScheduler, never()).jobFinished(any(String.class));
         verify(jobScheduler, never()).jobFailed(any(String.class));
@@ -81,10 +82,10 @@ public class JobIngesterTest {
 
     @Test
     public void ingestJobs_ingestingThrowsException_jobSchedulerReloadsPersistedJobs() {
-        Job job1 = new Job("1");
-        jobCommandsInDatabase.add(new JobCommand(Command.SCHEDULE, job1));
+        Job job = buildJob();
+        jobCommandsInDatabase.add(new JobCommand(Command.SCHEDULE, job));
         String message = "Failed to add job";
-        doThrow(new RuntimeException(message)).when(jobScheduler).schedule(job1);
+        doThrow(new RuntimeException(message)).when(jobScheduler).schedule(job);
 
         try {
             jobIngester.ingestJobs();
@@ -94,5 +95,9 @@ public class JobIngesterTest {
         }
 
         verify(jobScheduler).loadPersistedJobs();
+    }
+
+    private Job buildJob() {
+        return new Job("1", "someType", null, Instant.now());
     }
 }

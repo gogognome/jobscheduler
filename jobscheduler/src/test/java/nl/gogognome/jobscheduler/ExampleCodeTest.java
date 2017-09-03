@@ -9,6 +9,7 @@ import org.junit.Test;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
+import java.time.Instant;
 
 public class ExampleCodeTest {
 
@@ -22,9 +23,11 @@ public class ExampleCodeTest {
         JobScheduler jobScheduler = new JobScheduler(new FifoRunnableJobFinder(), new NoOperationPersister());
 
         // Create a job
-        Job jobToSchedule = new Job("857394");
-        jobToSchedule.setType("send email");
-        jobToSchedule.setData("{address: 'foo@bar.com', subject: 'welcome', contents: 'bla bla'}".getBytes(charset));
+        String jobId = "857394";
+        String jobType = "send email";
+        byte[] data = "{address: 'foo@bar.com', subject: 'welcome', contents: 'bla bla'}".getBytes(charset);
+        Instant scheduledAtInstant = Instant.now();
+        Job jobToSchedule = new Job(jobId, jobType, data, scheduledAtInstant);
 
         // Add the job
         jobScheduler.schedule(jobToSchedule);

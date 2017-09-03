@@ -8,6 +8,7 @@ import nl.gogognome.jobscheduler.scheduler.JobState;
 import nl.gogognome.jobscheduler.scheduler.ScheduledJob;
 
 import java.sql.SQLException;
+import java.time.Instant;
 
 public class ScheduledJobDAO extends AbstractDomainClassDAO<ScheduledJob>{
 
@@ -20,14 +21,16 @@ public class ScheduledJobDAO extends AbstractDomainClassDAO<ScheduledJob>{
 
     @Override
     protected ScheduledJob getObjectFromResultSet(ResultSetWrapper result) throws SQLException {
-        Job job = new Job(result.getString(properties.getIdColumn()));
-        job.setType(result.getString(properties.getTypeColumn()));
-        job.setData(result.getBytes(properties.getDataColumn()));
-        job.setScheduledAtInstant(result.getInstant(properties.getScheduledAtInstantColumn()));
-        ScheduledJob scheduledJob = new ScheduledJob(job);
-        scheduledJob.setState(result.getEnum(JobState.class, properties.getJobStateColumn()));
-        scheduledJob.setRequesterId(result.getString(properties.getRequesterIdColumn()));
-        scheduledJob.setTimeoutAtInstant(result.getInstant(properties.getTimeoutAtInstantColumn()));
+        String id = result.getString(properties.getIdColumn());
+        String type = result.getString(properties.getTypeColumn());
+        byte[] data = result.getBytes(properties.getDataColumn());
+        Instant scheduledAtInstant = result.getInstant(properties.getScheduledAtInstantColumn());
+        Job job = new Job(id, type, data, scheduledAtInstant);
+
+        JobState state = result.getEnum(JobState.class, properties.getJobStateColumn());
+        String requesterId = result.getString(properties.getRequesterIdColumn());
+        Instant timeoutAtInstant = result.getInstant(properties.getTimeoutAtInstantColumn());
+        ScheduledJob scheduledJob = new ScheduledJob(job, state, requesterId, timeoutAtInstant);
         return scheduledJob;
     }
 
