@@ -6,7 +6,7 @@ the commands to the job scheduler
 
 This library allows your application (which could be a microservice or a big monolith enterprise application) 
 to schedule jobs and notify that
-jobs have finished using a [`JobScheduler`](https://github.com/gogognome/jobscheduler) by writing
+jobs have finished using a `JobScheduler` (see `jobscheduler` module) by writing
 job commands in a database table. This library creates a worker thread that polls
 for job commands in the database table and forwards them to the job scheduler and then
 removes the job commands from the database.
@@ -19,33 +19,38 @@ distributed transactions as is needed if you are using a message bus like MSMQ.
 
 ## Usage
 
-You are responsible for creating a table. The name of the table and columns are configurable.
-The default table can be created with this SQL command:
+You are responsible for creating a table and a sequence. The name of the table, columns and sequence 
+are configurable. The default table and sequence can be created with this SQL command:
 
     CREATE TABLE NlGogognomeJobsToIngest (
-      id VARCHAR(1000),
+      command_id VARCHAR(1000) NOT NULL,
       command VARCHAR(20) NOT NULL,
+      id VARCHAR(1000) NOT NULL,
       scheduledAtInstant TIMESTAMP NULL,
-      type VARCHAR(1000) NOT NULL,
-      data VARCHAR(100000) NULL,
-      PRIMARY KEY (id)
+      type VARCHAR(1000) NULL,
+      data VARBINARY(100000) NULL,
+      PRIMARY KEY (command_id)
     );
+    
+    CREATE INDEX idx_NLGogognomeJobsToIngest_id
+    ON NlGogognomeJobsToIngest (id);
+    
+    CREATE SEQUENCE command_id_sequence;
 
-You see that your application is responsible for generating a unique
-id for the job commands. A simple scheme to follow might be `<server-name>-<process-id>-<sequence-number>`
-or just use GUIDs.
+If you do not supply a sequence, then your application is responsible for generating a unique
+id for the job commands. A simple scheme to follow might be `<server-name>-<process-id>-<sequence-number>`.
+Jobs will be ingested by ascending command id, so using a GUID as command id changes the order in which commands
+are inserted.
 
-The value of command must be `SCHEDULE`, `RESCHEDULE`, `JOB_FINISHED` or `JOB_FAILED`. 
+The value of `command` must be `SCHEDULE`, `RESCHEDULE`, `JOB_FINISHED`, `JOB_FAILED` or `REMOVE`. 
 
-Creating a `JobIngesterRunner` instance is a bit laborious without Spring's depdency injection:
+Creating a `JobIngesterRunner` requires the following steps:
 
     JobScheduler jobScheduler = ... // see job scheduler project
     JobIngesterProperties properties = new JobIngesterProperties();
     JobCommandDAO jobCommandDao = new JobCommandDAO(properties);
     JobIngester jobIngester = new JobIngester(jobScheduler, jobCommandDao);
     JobIngesterRunner jobIngesterRunner = new JobIngesterRunner(properties, jobIngester);
-
-If you use Spring's depdency injection then you can simply autowire the `JobIngesterRunner`.
 
 This library uses [Gogo Data Access](https://github.com/gogognome/gogodataaccess) to access
 the database. All you have to do is register a `DataSource` at initialization time:
@@ -62,5 +67,4 @@ And when you want to stop the `JobIngesterRunner` simply do
 
     jobIngesterRunner.stop();
 
-For an example of how to use this application, you can check out the
-[Http Job Scheduler Server](https://github.com/gogognome/httpjobschedulerserver) project on Github.
+For an example of how to use this application, you can check out the `httpjobschedulerserver` module.

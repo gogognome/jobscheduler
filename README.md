@@ -18,34 +18,32 @@ one by one and executes the jobs.
 Job Scheduler implements a queue for jobs. It allows you to add jobs
 to the queue and to take them from the queue to execute them.
 
-This library is **small**, just a bit more than 10 kilobytes, because it
+This library is **small**, about 15 kilobytes, because it
 has no dependencies at all. 
 
 The library is **pluggable**. Job Scheduler stores the queued jobs in memory,
 but it offers a hook to persist the queued jobs. An example of plugin
-to persist jobs in a database can be found in GitHub: 
-[jobscheduler.databasepersister](https://github.com/gogognome/jobscheduler.databasepersister).
+to persist jobs in a database can be found in the module `jobscheduler.databasepersister`.
 
 The library can be included in your own application. You can add jobs
 to the queue and get jobs from the queue by calling methods.
 It is also possible to create a standalone application, a microservice, 
 that keeps track of the queued jobs. If you include in this microservice
-the Database Ingester, which can be found in Github's
-[jobscheduler.databaseingester](https://github.com/gogognome/jobscheduler.databaseingester) repository, then commands to
+the jar file from the `jobscheduler.databaseingester` module, then commands to
 create, update or delete jobs are 'sent' to the Job Scheduler by writing
 rows in a database. It is quite easy to add an HTTP server to this microservice,
-so that other microservices could request jobs to be executed via a HTTP request.
-An example of such a microservice can be found in Github too: 
-[httpjobschedulerserver](https://github.com/gogognome/httpjobschedulerserver).
+so that other microservices can request jobs to be executed via an HTTP request.
+An example of such a microservice can be found in the `httpjobschedulerserver`
+module.
 
 Job Scheduler gives you full control over the order in which jobs are executed.
 A FIFO implementation is supplied by this library. By implementing
 the interface `RunnableJobFinder` yourself, you get full control over which
-job is exectued when. This allows you to temporarily block certain types
+job is executed and when. This allows you to temporarily block certain types
 of jobs, or to limit the number of jobs of certain type to be executed 
 at any moment. It allows you to change the order of jobs, or even combine
 jobs before they got executed. *This feature was the main reason to build
-Job Scheduler.*
+the Job Scheduler.*
 
 ## Code samples
 
@@ -55,9 +53,11 @@ Here is sample code to create a job scheduler, add a job and finally run jobs.
     JobScheduler jobScheduler = new JobScheduler(new FifoRunnableJobFinder(), new NoOperationPersister());
 
     // Create a job
-    Job jobToSchedule = new Job("857394");
-    jobToSchedule.setType("send email");
-    jobToSchedule.setData("{address: 'foo@bar.com', subject: 'welcome', contents: 'bla bla'}".getBytes(charset));
+    String jobId = "857394";
+    String jobType = "send email";
+    byte[] data = "{address: 'foo@bar.com', subject: 'welcome', contents: 'bla bla'}".getBytes(charset);
+    Instant scheduledAtInstant = Instant.now();
+    Job jobToSchedule = new Job(jobId, jobType, data, scheduledAtInstant);
 
     // Add the job
     jobScheduler.schedule(jobToSchedule);
@@ -88,13 +88,19 @@ Here is sample code to create a job scheduler, add a job and finally run jobs.
 You notice that the constructor of `JobScheduler` has two parameters. The first is
 a `RunnableJobFinder`, the second is a `JobPersister`. 
 
-The job scheduler forwards all calls to `schedule`, `jobFinished` and `jobFailed` 
-to the `RunnableJobFinder`. The job finder will keep the jobs in memory in a data structure 
-that is convenient for quickly determining the next runnable job.
+The job scheduler forwards all calls to `schedule`, `reschedule`, `jobFinished` 
+and `jobFailed` to the `RunnableJobFinder`. The job finder will keep 
+the jobs in memory in a data structure that is convenient for quickly determining 
+the next runnable job.
  
-The method `startNextRunnableJob` of the job scheduler asks the job finder 
-to determine the next runnable job. If such a job is found, then its status
-is updated from `IDLE` to `RUNNING`.
+The method `JobScheduler.tryStartNextRunnableJobUnsynchronized` asks 
+the job finder to determine the next runnable job. If such a job is found, 
+then its status is updated from `IDLE` to `RUNNING`.
+
+The method `JobScheduler.startNextRunnableJob` is similar to 
+`JobScheduler.tryStartNextRunnableJobUnsynchronized`, but if no job is runnable
+at the moment of calling this method, it will wait until a job becomes runnable
+within a specified amount of time.
 
 A job is considered runnable if it is allowed to be run. An example of a job
 that is not runnable would be a job that is scheduled to be executed in one hour.
@@ -103,6 +109,46 @@ After the hour has passed the job becomes runnable.
 The class `FifoRunnableJobFinder` stores all jobs in an `ArrayList`. When it has to
 determine the next runnable job it scans through this `ArrayList` until it finds
 a job that has state `IDLE` and with 'scheduled at instant' that is not in the future.
+
+The code above shows how the `JobScheduler` works. However, it still leaves a lot
+of boilerplate code to be written. The module `jobschedulerservice` combines
+the database ingester and database persister modules to offer a service that
+can be used to schedule jobs and let them be executed on a specified number of
+threads. The jobs are classes that implement the `Runnable` interface.
+The attributes of the classes are persisted in the database in JSON format.
+When the job is executed, the instance is created again from this JSON format
+and then the `run` method is called. The class name of this object is used
+as type of the job. That is the reason why a job must be implemented by a class
+instead of using a lambda expression.
+
+Here is sample code for the job scheduler service:
+
+        // Initialize properties. Modify default values if needed. 
+        JobIngesterProperties jobIngesterProperties = new JobIngesterProperties();
+        DatabaseJobPersisterProperties databaseJobPersisterProperties = new DatabaseJobPersisterProperties();
+
+        // Register data source so that it can be used by the job ingester and database job persister
+        DataSource dataSource = ...;
+        CompositeDatasourceTransaction.registerDataSource(jobIngesterProperties.getConnectionName(), dataSource);
+        CompositeDatasourceTransaction.registerDataSource(databaseJobPersisterProperties.getConnectionName(), dataSource);
+
+        // Creste job scheduler service with maximum 4 threads for exeuting jobs
+        JobSchedulerService jobSchedulerService = new JobSchedulerService(new FifoRunnableJobFinder(), jobIngesterProperties, databaseJobPersisterProperties, 4);
+
+        // Start the processing of jobs
+        jobSchedulerService.startProcessingJobs();
+
+        System.out.println("Current time: " + Instant.now());
+        // Schedule job to execute immediately
+        jobSchedulerService.schedule(new HelloWorldJob());
+        // Schedule job to execute after 5 seconds
+        jobSchedulerService.schedule(new HelloWorldJob(), Instant.now().plusSeconds(5));
+
+        // Wait till both jobs have been executed
+        Thread.sleep(6_000);
+
+        // Stop the processing of jobs
+        jobSchedulerService.stopProcessingJobs();
     
 ## Why building yet another job scheduler and not use an existing one?
  
