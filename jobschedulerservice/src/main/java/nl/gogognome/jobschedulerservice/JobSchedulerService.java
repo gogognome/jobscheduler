@@ -35,12 +35,19 @@ public class JobSchedulerService {
     private final JobScheduler jobScheduler;
     private final JobCommandDAO jobCommandDAO;
     private final JobIngesterRunner jobIngesterRunner;
-    private final ExecutorService executorService;
     private final int threadPoolSize;
-    
+    private ExecutorService executorService;
+
     private AtomicInteger nextId = new AtomicInteger(1);
     private AtomicBoolean started = new AtomicBoolean(false);
 
+    /**
+     * Creates a job scheduler service. This service has state, so make sure that you treat it as a singleton.
+     * @param runnableJobFinder the runnable job finder
+     * @param jobIngesterProperties properties for the job ingester
+     * @param databaseJobPersisterProperties properties for the database job persister
+     * @param threadPoolSize the maximum number of threads used to execute tasks
+     */
     public JobSchedulerService(RunnableJobFinder runnableJobFinder, JobIngesterProperties jobIngesterProperties,
                                DatabaseJobPersisterProperties databaseJobPersisterProperties, int threadPoolSize) {
         DatabaseJobPersister databaseJobPersister = new DatabaseJobPersister(databaseJobPersisterProperties, new ScheduledJobDAO(databaseJobPersisterProperties));
@@ -48,7 +55,6 @@ public class JobSchedulerService {
         this.jobCommandDAO = new JobCommandDAO(jobIngesterProperties);
         JobIngester jobIngester = new JobIngester(jobScheduler, jobCommandDAO);
         this.jobIngesterRunner = new JobIngesterRunner(jobIngesterProperties, jobIngester);
-        this.executorService = Executors.newFixedThreadPool(threadPoolSize);
         this.threadPoolSize = threadPoolSize;
     }
 
@@ -58,6 +64,8 @@ public class JobSchedulerService {
             throw new IllegalStateException("Processing jobs has been started before. First stop processing before starting processing again.");
         }
         jobIngesterRunner.start();
+
+        this.executorService = Executors.newFixedThreadPool(threadPoolSize);
         for (int i=0; i<threadPoolSize; i++) {
             String requesterId = "requester-" + (i + 1);
             executorService.submit(() -> jobHandlerLoop(requesterId));
