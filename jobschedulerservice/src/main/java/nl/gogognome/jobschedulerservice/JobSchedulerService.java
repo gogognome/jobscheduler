@@ -92,6 +92,16 @@ public class JobSchedulerService {
      * @return the id of the job that has been scheduled
      */
     public String schedule(Runnable runnable) {
+        return schedule(runnable, Instant.now());
+    }
+
+    /**
+     * Schedules a job to execute the #Runnable as immediately.
+     * @param runnable the #Runnable to be executed
+     * @param scheduledAtInstant instant at which the job should be started
+     * @return the id of the job that has been scheduled
+     */
+    public String schedule(Runnable runnable, Instant scheduledAtInstant) {
         return RequireTransaction.returns(() -> {
             validateParameters(runnable);
 
@@ -99,7 +109,7 @@ public class JobSchedulerService {
                     JOB_ID_PREFIX + nextId.getAndIncrement(),
                     runnable.getClass().getName(),
                     GSON.toJson(runnable).getBytes(CHARSET),
-                    Instant.now());
+                    scheduledAtInstant);
 
             jobCommandDAO.create(new JobCommand(SCHEDULE, job));
             LOGGER.trace("Scheduled job with type " + job.getType() + " and id " + job.getId());
