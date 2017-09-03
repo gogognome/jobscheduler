@@ -22,10 +22,8 @@ public class ScheduledJobFakes {
     }
 
     public static ScheduledJob defaultIdleJobStartingAfter(Duration startInstantOffset, JobState state) {
-        Instant now = Instant.now();
         Job job = JobFakes.withStartInstant(Instant.now().plus(startInstantOffset));
-        ScheduledJob scheduledJob = new ScheduledJob(job, state);
-        return scheduledJob;
+        return new ScheduledJob(job, state);
     }
 
     public static ScheduledJob with(Job job) {
