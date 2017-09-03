@@ -3,6 +3,7 @@ package nl.gogognome.jobschedulerservice;
 import com.zaxxer.hikari.HikariDataSource;
 import nl.gogognome.dataaccess.migrations.DatabaseMigratorDAO;
 import nl.gogognome.dataaccess.transaction.CompositeDatasourceTransaction;
+import nl.gogognome.dataaccess.transaction.CurrentTransaction;
 import nl.gogognome.dataaccess.transaction.NewTransaction;
 import nl.gogognome.jobscheduler.jobingester.database.JobIngesterProperties;
 import nl.gogognome.jobscheduler.jobpersister.database.DatabaseJobPersisterProperties;
@@ -139,6 +140,20 @@ public class JobSchedulerServiceTest {
         });
 
         withRunningJobs(() -> assertThatEventually(() -> jobSchedulerService.findAllJobs().isEmpty()));
+    }
+
+    @Test
+    public void scheduleJobAndRollbackTransaction_jobIsNotExecuted() throws Exception {
+        withRunningJobs(() -> {
+            NewTransaction.runs(() -> {
+                jobSchedulerService.schedule(new SuccessfulJobRunner(), Instant.now().plus(Duration.ofSeconds(5)));
+                Thread.sleep(1_000); // enough time to ingest the command if it was committed
+                CurrentTransaction.get().rollback();
+            });
+
+            Thread.sleep(1_000); // enough time to ingest the command if it was in the database
+            assertTrue(jobSchedulerService.findAllJobs().isEmpty());
+        });
     }
 
     private void withRunningJobs(RunnableThrowingException runnable) throws Exception {
