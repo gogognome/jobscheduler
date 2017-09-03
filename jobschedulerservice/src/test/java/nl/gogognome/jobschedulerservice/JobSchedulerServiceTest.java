@@ -112,11 +112,11 @@ public class JobSchedulerServiceTest {
     @Test
     public void scheduleJobWithDelay_jobIsExecutedAfterDelay() throws Exception {
         withRunningJobs(() -> {
-            Instant scheduledAtInstant = Instant.now().plus(Duration.ofSeconds(1));
+            Instant scheduledAtInstant = Instant.now().plus(Duration.ofSeconds(3));
             jobSchedulerService.schedule(new SuccessfulJobRunner(), scheduledAtInstant);
             assertThatEventually(() -> lastJobExecutedAt != null);
-            assertTrue(lastJobExecutedAt.isAfter(scheduledAtInstant.minusMillis(100)));
-            assertTrue(lastJobExecutedAt.isBefore(scheduledAtInstant.plusMillis(100)));
+            assertTrue(lastJobExecutedAt.isAfter(scheduledAtInstant.minusMillis(200)));
+            assertTrue(lastJobExecutedAt.isBefore(scheduledAtInstant.plusMillis(1200)));
         });
     }
 
