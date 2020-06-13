@@ -132,7 +132,7 @@ Here is sample code for the job scheduler service:
         CompositeDatasourceTransaction.registerDataSource(jobIngesterProperties.getConnectionName(), dataSource);
         CompositeDatasourceTransaction.registerDataSource(databaseJobPersisterProperties.getConnectionName(), dataSource);
 
-        // Creste job scheduler service with maximum 4 threads for exeuting jobs
+        // Creste job scheduler service with maximum 4 threads for executing jobs
         JobSchedulerService jobSchedulerService = new JobSchedulerService(new FifoRunnableJobFinder(), jobIngesterProperties, databaseJobPersisterProperties, 4);
 
         // Start the processing of jobs
