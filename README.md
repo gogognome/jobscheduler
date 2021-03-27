@@ -264,7 +264,7 @@ non-distributed transactions.
 
 Every night the live database is copied to the database of the acceptance 
 and development environments. Messages in message queues are not copied. 
-So on the acceptance and development environments the messages in the queues  
+So on the acceptance and development environments the messages in the queues
 are out-of-sync with the sagas in the database.
 
 ### My proposed solution
