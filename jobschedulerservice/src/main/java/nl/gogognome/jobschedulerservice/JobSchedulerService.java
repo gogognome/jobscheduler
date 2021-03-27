@@ -14,7 +14,6 @@ import nl.gogognome.jobscheduler.scheduler.ScheduledJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.charset.Charset;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -29,7 +28,6 @@ public class JobSchedulerService {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(JobSchedulerService.class);
     private final static Gson GSON = new Gson();
-    private final static Charset CHARSET = Charset.forName("UTF-8");
     private final static String JOB_ID_PREFIX = Long.toString(System.currentTimeMillis()) + '-';
 
     private final JobScheduler jobScheduler;
@@ -38,8 +36,8 @@ public class JobSchedulerService {
     private final int threadPoolSize;
     private ExecutorService executorService;
 
-    private AtomicInteger nextId = new AtomicInteger(1);
-    private AtomicBoolean started = new AtomicBoolean(false);
+    private final AtomicInteger nextId = new AtomicInteger(1);
+    private final AtomicBoolean started = new AtomicBoolean(false);
 
     /**
      * Creates a job scheduler service. This service has state, so make sure that you treat it as a singleton.
@@ -116,7 +114,7 @@ public class JobSchedulerService {
             Job job = new Job(
                     JOB_ID_PREFIX + nextId.getAndIncrement(),
                     runnable.getClass().getName(),
-                    GSON.toJson(runnable).getBytes(CHARSET),
+                    GSON.toJson(runnable),
                     scheduledAtInstant);
 
             jobCommandDAO.create(new JobCommand(SCHEDULE, job));
@@ -141,9 +139,6 @@ public class JobSchedulerService {
         if (runnable == null) {
             throw new NullPointerException("runnable must not be null");
         }
-        if (runnable.getClass().getName() == null) {
-            throw new IllegalArgumentException("Instance of " + runnable.getClass() + " cannot be stored as job data.");
-        }
     }
 
     private void jobHandlerLoop(String requesterId) {
@@ -165,7 +160,7 @@ public class JobSchedulerService {
                 if (!Runnable.class.isAssignableFrom(clazz)) {
                     throw new IllegalStateException("The type " + job.getType() + " of job " + job.getId() + " cannot be instantiated");
                 }
-                Runnable runnable = GSON.fromJson(new String(job.getData(), CHARSET), (Class<? extends Runnable>) clazz);
+                Runnable runnable = GSON.fromJson(job.getData(), (Class<? extends Runnable>) clazz);
                 runnable.run();
                 jobCommandDAO.create(new JobCommand(JOB_FINISHED, job));
                 LOGGER.trace("Requester " + requesterId + " handled successfully job with type " + job.getType() + " and id " + job.getId());

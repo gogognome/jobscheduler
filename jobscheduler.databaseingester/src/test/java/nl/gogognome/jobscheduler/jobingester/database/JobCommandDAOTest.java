@@ -49,7 +49,7 @@ public class JobCommandDAOTest {
     }
 
     @Test
-    public void findAll_zeroJobsInDatabase_returnsEmptyList() throws SQLException {
+    public void findAll_zeroJobsInDatabase_returnsEmptyList() {
         NewTransaction.runs(() -> {
             List<JobCommand> jobCommands = jobCommandDAO.findJobCommands();
 
@@ -58,7 +58,7 @@ public class JobCommandDAOTest {
     }
 
     @Test
-    public void findAll_oneJobsInDatabase_returnsOneJob() throws SQLException {
+    public void findAll_oneJobsInDatabase_returnsOneJob() {
         JobCommand jobCommand = JobCommandBuilder.buildJob("1", Command.SCHEDULE);
 
         NewTransaction.runs(() -> {
@@ -71,12 +71,12 @@ public class JobCommandDAOTest {
             Job retrievedJob1 = jobCommands.get(0).getJob();
             assertEquals(job.getId(), retrievedJob1.getId());
             assertEquals(job.getType(), retrievedJob1.getType());
-            assertArrayEquals(job.getData(), retrievedJob1.getData());
+            assertEquals(job.getData(), retrievedJob1.getData());
         });
     }
 
     @Test
-    public void findAll_twoJobCommandsPresentAndSelectJobCommandsQueryOnlyGetsFirstCommand_getsFirstRow() throws SQLException {
+    public void findAll_twoJobCommandsPresentAndSelectJobCommandsQueryOnlyGetsFirstCommand_getsFirstRow() {
         properties.setSelectJobCommandsQuery("SELECT * FROM " + properties.getTableName() + " LIMIT 1");
         NewTransaction.runs(() -> {
             JobCommand jobCommand1 = JobCommandBuilder.buildJob("1", Command.SCHEDULE);
@@ -107,7 +107,7 @@ public class JobCommandDAOTest {
     }
 
     @Test
-    public void delete_oneJobCommandToDelete_deletesJobCommand() throws SQLException {
+    public void delete_oneJobCommandToDelete_deletesJobCommand() {
         NewTransaction.runs(() -> {
             JobCommand jobCommand = JobCommandBuilder.buildJob("1", Command.SCHEDULE);
             jobCommand = jobCommandDAO.create(jobCommand);
@@ -120,7 +120,7 @@ public class JobCommandDAOTest {
 
 
     @Test
-    public void delete_twoJobCommandsToDelete_deletesJobCommands() throws SQLException {
+    public void delete_twoJobCommandsToDelete_deletesJobCommands() {
         NewTransaction.runs(() -> {
             JobCommand jobCommand1 = JobCommandBuilder.buildJob("1", Command.SCHEDULE);
             jobCommand1 = jobCommandDAO.create(jobCommand1);
@@ -148,7 +148,7 @@ public class JobCommandDAOTest {
     }
 
     @Test
-    public void allCommandsShouldFitInCommandColumn() throws SQLException {
+    public void allCommandsShouldFitInCommandColumn() {
         NewTransaction.runs(() -> {
             int nextId = 1;
             for (Command command : Command.values()) {

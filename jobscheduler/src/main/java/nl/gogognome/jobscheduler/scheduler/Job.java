@@ -9,13 +9,13 @@ public class Job {
 
     private final String id;
     private final String type;
-    private final byte[] data;
+    private final String data;
     private final Instant scheduledAtInstant;
 
-    public Job(String id, String type, byte[] data, Instant scheduledAtInstant) {
+    public Job(String id, String type, String data, Instant scheduledAtInstant) {
         this.id = id;
         this.type = type;
-        this.data = data != null ? data.clone() : null;
+        this.data = data;
         this.scheduledAtInstant = scheduledAtInstant;
     }
 
@@ -27,8 +27,8 @@ public class Job {
         return type;
     }
 
-    public byte[] getData() {
-        return data != null ? data.clone() : null;
+    public String getData() {
+        return data;
     }
 
     public Instant getScheduledAtInstant() {

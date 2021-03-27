@@ -7,25 +7,21 @@ import nl.gogognome.jobscheduler.scheduler.JobScheduler;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.io.UnsupportedEncodingException;
-import java.nio.charset.Charset;
 import java.time.Instant;
 
 public class ExampleCodeTest {
 
-    private final Charset charset = Charset.defaultCharset();
-
     @SuppressWarnings({"InfiniteLoopStatement", "StatementWithEmptyBody"})
     @Ignore("This test does not end. It contains the example code of README.md.")
     @Test
-    public void exampleCode() throws UnsupportedEncodingException {
+    public void exampleCode() {
         // Create a job scheduler
         JobScheduler jobScheduler = new JobScheduler(new FifoRunnableJobFinder(), new NoOperationPersister());
 
         // Create a job
         String jobId = "857394";
         String jobType = "send email";
-        byte[] data = "{address: 'foo@bar.com', subject: 'welcome', contents: 'bla bla'}".getBytes(charset);
+        String data = "{address: 'foo@bar.com', subject: 'welcome', contents: 'bla bla'}";
         Instant scheduledAtInstant = Instant.now();
         Job jobToSchedule = new Job(jobId, jobType, data, scheduledAtInstant);
 
@@ -43,7 +39,7 @@ public class ExampleCodeTest {
             if ("send email".equals(job.getType())) {
                 // It is a job to send an email. Handle it here.
                 try {
-                    sendEmail(new String(job.getData(), charset));
+                    sendEmail(job.getData());
                     // Notify job scheduler that the job has finished.
                     jobScheduler.jobFinished(job.getId());
                 } catch (Exception e) {

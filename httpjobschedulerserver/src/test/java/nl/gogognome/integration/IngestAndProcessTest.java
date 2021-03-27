@@ -68,7 +68,7 @@ public class IngestAndProcessTest {
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertTrue(response.getBody().isJobAvailable());
-        assertArrayEquals(job.getData(), Base64.getDecoder().decode(response.getBody().getJobData()));
+        assertEquals(job.getData(),response.getBody().getJobData());
 
         jobIngestTestService.createJobCommand(Command.JOB_FINISHED, job);
 
@@ -92,7 +92,7 @@ public class IngestAndProcessTest {
         tasks.add(() -> { createJobs(nrJobs); return null; } );
 
         ExecutorService executorService = Executors.newFixedThreadPool(nrThreads);
-        assertTrue("Nr job requesters must be a divisor of the number of jobs", nrJobs % nrThreads== 0);
+        assertEquals("Nr job requesters must be a divisor of the number of jobs", 0, nrJobs % nrThreads);
         for (int i=0; i<nrThreads; i++) {
             tasks.add(new JobRequester("requester-" + i, nrJobs / nrThreads));
         }
@@ -108,7 +108,7 @@ public class IngestAndProcessTest {
     }
 
     private Job buildJob(String jobId) {
-        return new Job(jobId, "no-op", new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }, Instant.now());
+        return new Job(jobId, "no-op", "1234567890", Instant.now());
     }
 
     private class JobRequester implements Callable<Void> {

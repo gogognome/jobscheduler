@@ -24,19 +24,12 @@ public class JobRequestController {
     private final JobScheduler jobScheduler;
     private final Properties properties;
     private final JobIngesterRunner jobIngesterRunner;
-    private Base64.Encoder base64Encoder;
     private Charset charset;
 
     public JobRequestController(JobScheduler jobScheduler, Properties properties, JobIngesterRunner jobIngesterRunner) {
         this.jobScheduler = jobScheduler;
         this.properties = properties;
         this.jobIngesterRunner = jobIngesterRunner;
-
-        if ("BASE64".equals(properties.getDataEncoding())) {
-            base64Encoder = Base64.getEncoder();
-        } else {
-            charset = Charset.forName(properties.getDataEncoding());
-        }
     }
 
     @PostConstruct
@@ -65,7 +58,7 @@ public class JobRequestController {
                 JobResponse response = new JobResponse();
                 response.setJobAvailable(true);
                 response.setJobId(job.getId());
-                response.setJobData(base64Encoder != null ? base64Encoder.encodeToString(job.getData()) : new String(job.getData(), charset));
+                response.setJobData(job.getData());
                 return response;
             } else {
                 logger.debug("timed out - no job found");

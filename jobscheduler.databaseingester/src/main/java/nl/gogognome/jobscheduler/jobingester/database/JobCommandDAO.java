@@ -37,7 +37,7 @@ public class JobCommandDAO extends AbstractDomainClassDAO<JobCommand>{
             }
             query.append(')');
 
-            int nrDeletedRows = execute(query.toString(), jobCommands.stream().map(j -> j.getCommandId()).toArray(Object[]::new)).getNumberModifiedRows();
+            int nrDeletedRows = execute(query.toString(), jobCommands.stream().map(JobCommand::getCommandId).toArray(Object[]::new)).getNumberModifiedRows();
             if (nrDeletedRows != jobCommands.size()) {
                 throw new SQLException("Deleted " + nrDeletedRows + " from the " + jobCommands.size() + " job commands!");
             }
@@ -50,7 +50,7 @@ public class JobCommandDAO extends AbstractDomainClassDAO<JobCommand>{
 
         String id = result.getString(properties.getIdColumn());
         String type = result.getString(properties.getTypeColumn());
-        byte[] data = result.getBytes(properties.getDataColumn());
+        String data = result.getString(properties.getDataColumn());
         Instant scheduledAtInstant = result.getInstant(properties.getScheduledAtInstantColumn());
         Job job = new Job(id, type, data, scheduledAtInstant);
 
@@ -60,7 +60,7 @@ public class JobCommandDAO extends AbstractDomainClassDAO<JobCommand>{
     }
 
     @Override
-    protected NameValuePairs getNameValuePairs(JobCommand jobCommand) throws SQLException {
+    protected NameValuePairs getNameValuePairs(JobCommand jobCommand) {
         Job job = jobCommand.getJob();
         return new NameValuePairs()
                 .add(properties.getCommandIdColumn(), jobCommand.getCommandId())

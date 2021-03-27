@@ -4,7 +4,7 @@ CREATE TABLE NlGogognomeJobsToIngest (
   id VARCHAR(1000) NOT NULL,
   scheduledAtInstant TIMESTAMP NULL,
   type VARCHAR(1000) NULL,
-  data VARBINARY(100000) NULL,
+  data VARCHAR(100000) NULL,
   PRIMARY KEY (command_id)
 );
 

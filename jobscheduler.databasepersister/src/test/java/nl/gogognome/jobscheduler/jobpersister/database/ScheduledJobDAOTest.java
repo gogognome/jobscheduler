@@ -56,7 +56,7 @@ public class ScheduledJobDAOTest {
             assertNotNull(readScheduledJob);
             assertEquals(scheduledJob.getJob().getId(), readScheduledJob.getJob().getId());
             assertEquals(scheduledJob.getJob().getType(), readScheduledJob.getJob().getType());
-            assertArrayEquals(scheduledJob.getJob().getData(), readScheduledJob.getJob().getData());
+            assertEquals(scheduledJob.getJob().getData(), readScheduledJob.getJob().getData());
             assertInstantsEqual(scheduledJob.getJob().getScheduledAtInstant(), readScheduledJob.getJob().getScheduledAtInstant());
             assertEquals(scheduledJob.getState(), readScheduledJob.getState());
             assertEquals(scheduledJob.getRequesterId(), readScheduledJob.getRequesterId());

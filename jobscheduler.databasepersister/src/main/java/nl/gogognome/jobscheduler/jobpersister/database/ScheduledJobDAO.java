@@ -23,7 +23,7 @@ public class ScheduledJobDAO extends AbstractDomainClassDAO<ScheduledJob>{
     protected ScheduledJob getObjectFromResultSet(ResultSetWrapper result) throws SQLException {
         String id = result.getString(properties.getIdColumn());
         String type = result.getString(properties.getTypeColumn());
-        byte[] data = result.getBytes(properties.getDataColumn());
+        String data = result.getString(properties.getDataColumn());
         Instant scheduledAtInstant = result.getInstant(properties.getScheduledAtInstantColumn());
         Job job = new Job(id, type, data, scheduledAtInstant);
 
