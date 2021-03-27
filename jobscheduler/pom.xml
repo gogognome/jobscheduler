@@ -25,6 +25,7 @@
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
             <version>3.4.6</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
