@@ -30,12 +30,11 @@ public class ScheduledJobDAO extends AbstractDomainClassDAO<ScheduledJob>{
         JobState state = result.getEnum(JobState.class, properties.getJobStateColumn());
         String requesterId = result.getString(properties.getRequesterIdColumn());
         Instant timeoutAtInstant = result.getInstant(properties.getTimeoutAtInstantColumn());
-        ScheduledJob scheduledJob = new ScheduledJob(job, state, requesterId, timeoutAtInstant);
-        return scheduledJob;
+        return new ScheduledJob(job, state, requesterId, timeoutAtInstant);
     }
 
     @Override
-    protected NameValuePairs getNameValuePairs(ScheduledJob scheduledJob) throws SQLException {
+    protected NameValuePairs getNameValuePairs(ScheduledJob scheduledJob) {
         return new NameValuePairs()
                 .add(properties.getIdColumn(), scheduledJob.getJob().getId())
                 .add(properties.getScheduledAtInstantColumn(), scheduledJob.getJob().getScheduledAtInstant())
