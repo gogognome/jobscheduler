@@ -11,6 +11,8 @@ import org.junit.Test;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
@@ -55,10 +57,10 @@ public class ScheduledJobDAOTest {
             assertEquals(scheduledJob.getJob().getId(), readScheduledJob.getJob().getId());
             assertEquals(scheduledJob.getJob().getType(), readScheduledJob.getJob().getType());
             assertArrayEquals(scheduledJob.getJob().getData(), readScheduledJob.getJob().getData());
-            assertEquals(scheduledJob.getJob().getScheduledAtInstant(), readScheduledJob.getJob().getScheduledAtInstant());
+            assertInstantsEqual(scheduledJob.getJob().getScheduledAtInstant(), readScheduledJob.getJob().getScheduledAtInstant());
             assertEquals(scheduledJob.getState(), readScheduledJob.getState());
             assertEquals(scheduledJob.getRequesterId(), readScheduledJob.getRequesterId());
-            assertEquals(scheduledJob.getTimeoutAtInstant(), readScheduledJob.getTimeoutAtInstant());
+            assertInstantsEqual(scheduledJob.getTimeoutAtInstant(), readScheduledJob.getTimeoutAtInstant());
         });
     }
 
@@ -87,5 +89,14 @@ public class ScheduledJobDAOTest {
         List<ScheduledJob> scheduledJobs = NewTransaction.returns(() -> scheduledJobDAO.findAll());
 
         assertEquals(asList(scheduledJob1, scheduledJob2, scheduledJob3), scheduledJobs);
+    }
+
+    /**
+     * Assert that two instants are equal. Since Java 9 the class {@link Instant} has nanosecond resolution. However,
+     * instants that are read from the database do not have such a high resolution. This assert method compares two
+     * instants after truncating them two milliseconds to work around this difference in accuracy.
+     */
+    private void assertInstantsEqual(Instant i1, Instant i2) {
+        assertEquals(i1.truncatedTo(ChronoUnit.MILLIS), i2.truncatedTo(ChronoUnit.MILLIS));
     }
 }
