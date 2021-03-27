@@ -20,7 +20,7 @@ import static org.junit.Assert.*;
 
 public class ScheduledJobDAOTest {
 
-    private DatabaseJobPersisterProperties properties = new DatabaseJobPersisterProperties();
+    private final DatabaseJobPersisterProperties properties = new DatabaseJobPersisterProperties();
     @SuppressWarnings("unused")
     private Connection connectionToKeepInMemoryDatabaseAlive;
     private ScheduledJobDAO scheduledJobDAO;
@@ -44,7 +44,7 @@ public class ScheduledJobDAOTest {
     }
 
     @Test
-    public void createJobAndReadItBack_shouldGetSameJobAgain() throws SQLException {
+    public void createJobAndReadItBack_shouldGetSameJobAgain() {
         ScheduledJob scheduledJob = ScheduledJobBuilder.build("1");
 
         NewTransaction.runs(() -> {
