@@ -8,7 +8,7 @@
     <artifactId>jobscheduler-multimodule</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <name>a small and plugable job scheduler</name>
+    <name>a small and pluggable job scheduler</name>
 
     <modules>
         <module>jobscheduler</module>
